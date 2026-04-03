@@ -63,7 +63,7 @@ make realtime-record-smoke
 In Grafana Explore, choose Loki datasource and run:
 
 ```logql
-{container_name="/aion-api-dev"} | json
+{container_name="/aion-dev-api"} | json
 ```
 
 Filter by fields like `trace_id` and `request_id` to correlate logs with traces.

@@ -3,7 +3,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus-dev:9090
+    url: http://aion-dev-prometheus:9090
     isDefault: true
     editable: true
     jsonData:

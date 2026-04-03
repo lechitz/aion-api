@@ -1,7 +1,7 @@
 services:
   kafka:
     image: redpandadata/redpanda:v24.3.5
-    container_name: kafka-dev
+    container_name: aion-dev-kafka
     command:
       - redpanda
       - start
@@ -18,17 +18,19 @@ services:
       - --kafka-addr
       - PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
       - --advertise-kafka-addr
-      - PLAINTEXT://kafka:9092,OUTSIDE://localhost:19092
+      - PLAINTEXT://aion-dev-kafka:9092,OUTSIDE://localhost:19092
       - --pandaproxy-addr
       - 0.0.0.0:8082
       - --advertise-pandaproxy-addr
-      - kafka:8082
+      - aion-dev-kafka:8082
     ports:
       - "19092:19092"
       - "8082:8082"
       - "9644:9644"
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-kafka
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health --exit-when-healthy >/dev/null 2>&1"]
@@ -39,7 +41,7 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: postgres-dev
+    container_name: aion-dev-postgres
     restart: always
     env_file:
       - .env.dev
@@ -48,7 +50,9 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -58,11 +62,13 @@ services:
 
   redis:
     image: redis:7.2
-    container_name: redis-aion-dev
+    container_name: aion-dev-redis
     ports:
       - "6379:6379"
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -72,7 +78,7 @@ services:
 
   localstack:
     image: localstack/localstack:3
-    container_name: localstack-dev
+    container_name: aion-dev-localstack
     ports:
       - "4566:4566"
     environment:
@@ -85,7 +91,9 @@ services:
       - ./localstack/init:/etc/localstack/init/ready.d
       - ../../../assets:/opt/localstack/assets:ro
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-localstack
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:4566/_localstack/health >/dev/null"]
@@ -96,7 +104,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.101.0
-    container_name: otel-collector
+    container_name: aion-dev-otel-collector
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ../../../observability/otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
@@ -104,7 +112,9 @@ services:
       - "4318:4318"   # OTLP HTTP
       - "9888:9888"   # /metrics Prometheus scrape
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-otel-collector
     restart: unless-stopped
     depends_on:
       jaeger:
@@ -112,19 +122,21 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.53.0
-    container_name: prometheus-dev
+    container_name: aion-dev-prometheus
     ports:
       - "9090:9090"
     volumes:
       - ../../../observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-prometheus
     depends_on:
       - otel-collector
 
   grafana:
     image: grafana/grafana:10.4.2
-    container_name: grafana-dev
+    container_name: aion-dev-grafana
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -137,13 +149,15 @@ services:
       - ../../../observability/grafana/provisioning:/etc/grafana/provisioning/dashboards
       - ../../../observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-grafana
     depends_on:
       - prometheus
 
   jaeger:
     image: jaegertracing/all-in-one:1.57
-    container_name: jaeger-dev
+    container_name: aion-dev-jaeger
     restart: unless-stopped
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
@@ -152,7 +166,9 @@ services:
       - "16686:16686"   # UI Web
       - "4317:4317"     # OTLP gRPC (otel-collector)
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-jaeger
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686/"]
       interval: 10s
@@ -162,7 +178,7 @@ services:
 
   loki:
     image: grafana/loki:2.9.8
-    container_name: loki-dev
+    container_name: aion-dev-loki
     command: ["-config.file=/etc/loki/loki.yaml"]
     ports:
       - "3100:3100"
@@ -170,12 +186,14 @@ services:
       - ../../../observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
       - loki-data-dev:/loki
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-loki
     restart: unless-stopped
 
   fluent-bit:
     image: fluent/fluent-bit:2.2.2
-    container_name: fluent-bit-dev
+    container_name: aion-dev-fluent-bit
     depends_on:
       - loki
     env_file:
@@ -186,12 +204,14 @@ services:
       - ../../../observability/fluentbit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ../../../observability/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-fluent-bit
     restart: unless-stopped
 
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama-dev
+    container_name: aion-dev-ollama
     # OPTIMIZATION: Avoids re-downloading ~800MB on every 'make dev'
     # Use 'docker pull ollama/ollama:latest' manually when you want to update
     pull_policy: missing
@@ -202,7 +222,9 @@ services:
     volumes:
       - ollama-models:/root/.ollama
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=*
@@ -225,7 +247,7 @@ services:
     build:
       context: ../../../../../aion-chat
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: aion-chat-dev
+    container_name: aion-dev-chat
     restart: unless-stopped
     env_file:
       - ../../../../../aion-chat/infrastructure/docker/environments/dev/.env.dev
@@ -239,7 +261,9 @@ services:
       # HOT RELOAD: Mounts Python code
       - ../../../../../aion-chat/src:/app/src
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-chat
     depends_on:
       ollama:
         condition: service_healthy
@@ -255,25 +279,27 @@ services:
     build:
       context: ../../../../../aion-ingest
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: aion-ingest-dev
+    container_name: aion-dev-ingest
     restart: unless-stopped
     environment:
       - APP_NAME=aion-ingest
       - HTTP_HOST=0.0.0.0
       - HTTP_PORT=8091
       - LOG_LEVEL=INFO
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=aion-dev-kafka:9092
       - KAFKA_TOPIC_INGEST=aion.ingest.events.v1
       - RAW_PAYLOAD_BUCKET=aion-raw-events
       - RAW_PAYLOAD_DIR=/data/raw
       - GRACEFUL_TIMEOUT_SECS=10
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aion-dev-otel-collector:4318
     ports:
       - "8091:8091"
     volumes:
-      - aion-ingest-raw-dev:/data/raw
+      - aion-dev-ingest-raw:/data/raw
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-ingest
     depends_on:
       kafka:
         condition: service_healthy
@@ -293,27 +319,29 @@ services:
     build:
       context: ../../../../../aion-streams
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: aion-streams-dev
+    container_name: aion-dev-streams
     restart: unless-stopped
     environment:
       - APP_NAME=aion-streams
       - ADMIN_HOST=0.0.0.0
       - ADMIN_PORT=8092
       - LOG_LEVEL=INFO
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=aion-dev-kafka:9092
       - CONSUMER_GROUP=aion-streams-v1
       - INPUT_TOPIC=aion.record.events.v1
       - DLQ_TOPIC=aion.record.events.dlq.v1
       - MAX_RETRIES=3
       - RETRY_BACKOFF_MS=250
-      - PROJECTION_STORE_DSN=postgres://aion:aion123@postgres:5432/aion-api?sslmode=disable
+      - PROJECTION_STORE_DSN=postgres://aion:aion123@aion-dev-postgres:5432/aion-api?sslmode=disable
       - READINESS_MAX_STALENESS_SECS=120
       - GRACEFUL_TIMEOUT_SECS=10
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aion-dev-otel-collector:4318
     ports:
       - "8092:8092"
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-streams
     depends_on:
       kafka:
         condition: service_healthy
@@ -333,23 +361,25 @@ services:
     build:
       context: ../../../../../aion-streams
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: aion-streams-worker-dev
+    container_name: aion-dev-streams-worker
     restart: unless-stopped
     entrypoint: ["aion-streams-worker"]
     environment:
       - APP_NAME=aion-streams
       - LOG_LEVEL=INFO
-      - KAFKA_BROKERS=kafka:9092
+      - KAFKA_BROKERS=aion-dev-kafka:9092
       - CONSUMER_GROUP=aion-streams-v1
       - INPUT_TOPIC=aion.record.events.v1
       - DLQ_TOPIC=aion.record.events.dlq.v1
       - MAX_RETRIES=3
       - RETRY_BACKOFF_MS=250
-      - PROJECTION_STORE_DSN=postgres://aion:aion123@postgres:5432/aion-api?sslmode=disable
+      - PROJECTION_STORE_DSN=postgres://aion:aion123@aion-dev-postgres:5432/aion-api?sslmode=disable
       - GRACEFUL_TIMEOUT_SECS=10
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aion-dev-otel-collector:4318
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-streams-worker
     depends_on:
       kafka:
         condition: service_healthy
@@ -363,7 +393,7 @@ services:
     build:
       context: ../../../..
       dockerfile: infrastructure/docker/environments/dev/Dockerfile.dev
-    container_name: aion-api-outbox-publisher-dev
+    container_name: aion-dev-api-outbox-publisher
     env_file:
       - .env.dev
     environment:
@@ -384,7 +414,9 @@ services:
       otel-collector:
         condition: service_started
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-api-outbox-publisher
     restart: unless-stopped
 
   aion-api:
@@ -393,7 +425,7 @@ services:
       context: ../../../..
       # HOT RELOAD: Uses Dockerfile.dev with Air
       dockerfile: infrastructure/docker/environments/dev/Dockerfile.dev
-    container_name: aion-api-dev
+    container_name: aion-dev-api
     env_file:
       - .env.dev
     environment:
@@ -430,7 +462,9 @@ services:
       aion-api-outbox-publisher:
         condition: service_started
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-api
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- \"http://localhost:$$HTTP_PORT$$HTTP_CONTEXT$$HTTP_API_ROOT$$HTTP_HEALTH_ROUTE\" >/dev/null 2>&1"]
@@ -444,7 +478,7 @@ services:
     build:
       context: ../../../../../aion-web
       dockerfile: infrastructure/docker/Dockerfile
-    container_name: aion-web-dev
+    container_name: aion-dev-web
     restart: unless-stopped
     ports:
       - "5000:5000"
@@ -465,7 +499,9 @@ services:
       # Preserves node_modules (DO NOT overwrite!)
       - aion-web-node-modules:/app/node_modules
     networks:
-      - rede_local
+      rede_local:
+        aliases:
+          - aion-dev-web
     depends_on:
       aion-api:
         condition: service_healthy
@@ -482,7 +518,7 @@ volumes:
   ollama-models:
   loki-data-dev:
   fluentbit-data:
-  aion-ingest-raw-dev:
+  aion-dev-ingest-raw:
   # HOT RELOAD: Named volumes to preserve dependencies
   aion-web-node-modules:
   go-mod-cache:

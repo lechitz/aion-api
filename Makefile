@@ -48,7 +48,7 @@ help:
 	@echo "                                  • Separate PostgreSQL database (aion-api_my)"
 	@echo "                                  • Separate Redis instance (redis-aion-my)"
 	@echo "                                  • Shares Ollama with dev (saves ~5GB+ per model)"
-	@echo "                                  • ⚠️  Requires ollama-dev running (make ollama-up)"
+	@echo "                                  • ⚠️  Requires aion-dev-ollama running (make ollama-up)"
 	@echo "                                  • 🔥 HOT RELOAD enabled for all projects"
 	@echo "                                  • Config in: infrastructure/docker/environments/my/"
 	@echo "     my-fast                  →  Start Personal stack without rebuilding"

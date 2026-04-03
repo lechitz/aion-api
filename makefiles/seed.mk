@@ -6,7 +6,7 @@
 # ============================================================
 .PHONY: seed-users seed-categories seed-all seed-tags seed-records seed-roles seed-user-roles seed-admin seed-user1-all seed-everybody seed-clean-users seed-clean-categories seed-clean-tags seed-clean-records seed-clean-roles seed-clean-user-roles seed-clean-registration-sessions seed-clean-all seed-helper seed-setup seed-quick seed-api-caller seed-api-caller-bootstrap seed-api-caller-clean seed-caller populate reset-user-data seed-test-timeline seed-clean-test-timeline seed-essential db-full db-reset
 
-POSTGRES_CONTAINER := postgres-dev
+POSTGRES_CONTAINER := aion-dev-postgres
 POSTGRES_USER := aion
 POSTGRES_DB := aion-api
 

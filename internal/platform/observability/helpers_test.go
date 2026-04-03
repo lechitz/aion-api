@@ -17,9 +17,9 @@ func TestParseHeaders(t *testing.T) {
 }
 
 func TestNormalizeEndpoint(t *testing.T) {
-	normalized, err := observability.NormalizeEndpoint("otel-collector:4318")
+	normalized, err := observability.NormalizeEndpoint("aion-dev-otel-collector:4318")
 	require.NoError(t, err)
-	require.Equal(t, "http://otel-collector:4318", normalized)
+	require.Equal(t, "http://aion-dev-otel-collector:4318", normalized)
 
 	normalized, err = observability.NormalizeEndpoint("https://otel:4318/path")
 	require.NoError(t, err)

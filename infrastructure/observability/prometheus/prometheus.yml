@@ -2,6 +2,6 @@ global:
   scrape_interval: 5s
 
 scrape_configs:
-  - job_name: 'otel-collector'
+  - job_name: 'aion-dev-otel-collector'
     static_configs:
-      - targets: ['otel-collector:9888']
+      - targets: ['aion-dev-otel-collector:9888']

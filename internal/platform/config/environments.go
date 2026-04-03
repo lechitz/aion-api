@@ -17,7 +17,7 @@ type Secret struct {
 
 // ObservabilityConfig holds all observability-related configuration.
 type ObservabilityConfig struct {
-	OtelExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"otel-collector:4318"`
+	OtelExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"aion-dev-otel-collector:4318"`
 	OtelServiceName          string `envconfig:"OTEL_SERVICE_NAME"           default:"aion-api"`
 	OtelServiceVersion       string `envconfig:"OTEL_SERVICE_VERSION"        default:"0.0.1"`
 	OtelExporterHeaders      string `envconfig:"OTEL_EXPORTER_HEADERS"       default:""`
@@ -28,7 +28,7 @@ type ObservabilityConfig struct {
 
 // KafkaConfig holds Kafka broker and topic settings for canonical event publication.
 type KafkaConfig struct {
-	Brokers                     string `envconfig:"KAFKA_BROKERS"                        default:"kafka:9092"`
+	Brokers                     string `envconfig:"KAFKA_BROKERS"                        default:"aion-dev-kafka:9092"`
 	RecordEventsTopic           string `envconfig:"KAFKA_TOPIC_RECORD_EVENTS"            default:"aion.record.events.v1"`
 	RecordProjectionEventsTopic string `envconfig:"KAFKA_TOPIC_RECORD_PROJECTION_EVENTS" default:"aion.record_projection.events.v1"`
 }
@@ -52,7 +52,7 @@ type RealtimeConfig struct {
 // CacheConfig holds Redis cache configuration.
 // Each bounded context uses a separate Redis database for isolation.
 type CacheConfig struct {
-	Addr     string `envconfig:"CACHE_ADDR"     default:"redis-aion:6379"`
+	Addr     string `envconfig:"CACHE_ADDR"     default:"aion-dev-redis:6379"`
 	Password string `envconfig:"CACHE_PASSWORD"`
 
 	AuthDB     int `envconfig:"CACHE_AUTH_DB"     default:"0"`
@@ -134,7 +134,7 @@ type Application struct {
 
 // AionChatConfig holds configuration for the Aion-Chat service (Python AI service).
 type AionChatConfig struct {
-	BaseURL    string        `envconfig:"AION_CHAT_URL"         default:"http://aion-chat:8000"`
+	BaseURL    string        `envconfig:"AION_CHAT_URL"         default:"http://aion-dev-chat:8000"`
 	ServiceKey string        `envconfig:"AION_CHAT_SERVICE_KEY" default:""`
 	Timeout    time.Duration `envconfig:"AION_CHAT_TIMEOUT"     default:"30s"`
 }
@@ -142,7 +142,7 @@ type AionChatConfig struct {
 // AvatarStorageConfig holds S3-compatible storage config for avatar uploads.
 type AvatarStorageConfig struct {
 	Provider      string `envconfig:"AVATAR_STORAGE_PROVIDER"     default:"s3"`
-	S3Endpoint    string `envconfig:"AVATAR_S3_ENDPOINT"          default:"http://localstack:4566"`
+	S3Endpoint    string `envconfig:"AVATAR_S3_ENDPOINT"          default:"http://aion-dev-localstack:4566"`
 	S3Region      string `envconfig:"AVATAR_S3_REGION"            default:"us-east-1"`
 	S3Bucket      string `envconfig:"AVATAR_S3_BUCKET"            default:"aion-assets"`
 	S3Prefix      string `envconfig:"AVATAR_S3_PREFIX"            default:"avatars"`

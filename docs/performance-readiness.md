@@ -28,7 +28,7 @@ Observed readiness signals from that run:
 
 - API health endpoint returned healthy after the stack restart
 - Prometheus, Grafana, Jaeger, and the OTel collector responded successfully
-- Prometheus reported the `otel-collector` target as up
+- Prometheus reported the `aion-dev-otel-collector` target as up
 - Grafana provisioned Prometheus and Jaeger datasources and exposed the RED dashboard
 - outbox diagnosis reported `pending_count=0`, `failed_count=0`, and `oldest_pending_age=n/a`
 - record projection smoke, realtime SSE smoke, and projection pagination smoke all passed
