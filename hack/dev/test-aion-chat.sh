@@ -134,7 +134,7 @@ else
     echo -e "${RED}⚠️  ALGUNS TESTES FALHARAM${NC}"
     echo ""
     echo "Verifique os logs:"
-    echo "  docker logs -f aion-chat-dev"
+    echo "  docker logs -f aion-dev-chat"
     echo ""
     exit 1
 fi

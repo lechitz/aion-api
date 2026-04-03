@@ -28,7 +28,7 @@ func baseConfig() config.Config {
 			Path: "/graphql",
 		},
 		Cache: config.CacheConfig{
-			Addr:     "redis:6379",
+			Addr:     "aion-dev-redis:6379",
 			PoolSize: 2,
 		},
 		DB: config.DBConfig{
@@ -47,11 +47,11 @@ func baseConfig() config.Config {
 			MaxRetries:      1,
 		},
 		Observability: config.ObservabilityConfig{
-			OtelExporterOTLPEndpoint: "otel-collector:4318",
+			OtelExporterOTLPEndpoint: "aion-dev-otel-collector:4318",
 			OtelExporterCompression:  "none",
 		},
 		Kafka: config.KafkaConfig{
-			Brokers:                     "kafka:9092",
+			Brokers:                     "aion-dev-kafka:9092",
 			RecordEventsTopic:           "aion.record.events.v1",
 			RecordProjectionEventsTopic: "aion.record_projection.events.v1",
 		},

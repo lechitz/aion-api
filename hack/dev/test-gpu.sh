@@ -8,9 +8,9 @@ echo "======================================"
 echo ""
 
 echo "1️⃣  Verificando se GPU está visível..."
-if docker exec ollama-dev nvidia-smi > /dev/null 2>&1; then
+if docker exec aion-dev-ollama nvidia-smi > /dev/null 2>&1; then
     echo "✅ GPU detectada!"
-    docker exec ollama-dev nvidia-smi | grep "NVIDIA GeForce"
+    docker exec aion-dev-ollama nvidia-smi | grep "NVIDIA GeForce"
 else
     echo "❌ GPU não detectada"
     echo "Execute: sudo systemctl restart docker && make dev"
@@ -19,11 +19,11 @@ fi
 echo ""
 
 echo "2️⃣  Verificando modelo Qwen..."
-if docker exec ollama-dev ollama list | grep -q "qwen2.5"; then
+if docker exec aion-dev-ollama ollama list | grep -q "qwen2.5"; then
     echo "✅ Modelo Qwen instalado!"
 else
     echo "⏳ Baixando modelo (~5 min)..."
-    docker exec ollama-dev ollama pull qwen2.5:7b-instruct-q4_K_M
+    docker exec aion-dev-ollama ollama pull qwen2.5:7b-instruct-q4_K_M
 fi
 echo ""
 
@@ -31,7 +31,7 @@ echo "3️⃣  Teste de performance..."
 echo "   Pergunta: 'Conte até 5'"
 echo "   Aguarde..."
 START=$(date +%s.%N)
-docker exec ollama-dev ollama run qwen2.5:7b-instruct-q4_K_M "Conte até 5" > /tmp/ollama-test.txt 2>&1
+docker exec aion-dev-ollama ollama run qwen2.5:7b-instruct-q4_K_M "Conte até 5" > /tmp/ollama-test.txt 2>&1
 END=$(date +%s.%N)
 DIFF=$(echo "$END - $START" | bc)
 

@@ -51,7 +51,7 @@ func TestProvideAppDependencies(t *testing.T) {
 				Key: "test-secret",
 			},
 			AionChat: config.AionChatConfig{
-				BaseURL: "http://aion-chat:8000",
+				BaseURL: "http://aion-dev-chat:8000",
 			},
 		},
 		HTTPClient: httpClient,

@@ -47,8 +47,8 @@ ollama:
 ```bash
 make dev-down
 make dev
-docker exec ollama-dev nvidia-smi
-docker logs ollama-dev | grep -i cuda
+docker exec aion-dev-ollama nvidia-smi
+docker logs aion-dev-ollama | grep -i cuda
 ```
 
 If CUDA is detected, GPU acceleration is active.

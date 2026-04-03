@@ -26,15 +26,15 @@ func (noopLogger) DebugwCtx(context.Context, string, ...any) {}
 
 func TestComputeEndpointForExporter(t *testing.T) {
 	require.Empty(t, computeEndpointForExporter("", nil))
-	require.Equal(t, "otel-collector:4318", computeEndpointForExporter("http://otel-collector:4318", nil))
-	require.Equal(t, "otel-collector:4318", computeEndpointForExporter("otel-collector:4318", nil))
+	require.Equal(t, "aion-dev-otel-collector:4318", computeEndpointForExporter("http://aion-dev-otel-collector:4318", nil))
+	require.Equal(t, "aion-dev-otel-collector:4318", computeEndpointForExporter("aion-dev-otel-collector:4318", nil))
 	require.Equal(t, "http://[::1", computeEndpointForExporter("http://[::1", noopLogger{}))
 }
 
 func TestBuildMetricOptions(t *testing.T) {
 	cfg := &config.Config{
 		Observability: config.ObservabilityConfig{
-			OtelExporterOTLPEndpoint: "otel-collector:4318",
+			OtelExporterOTLPEndpoint: "aion-dev-otel-collector:4318",
 			OtelExporterInsecure:     true,
 			OtelExporterTimeout:      "5s",
 			OtelExporterCompression:  "gzip",
