@@ -50,6 +50,7 @@ func (h *Handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		Username:            user.Username,
 		Email:               user.Email,
 		ID:                  user.ID,
+		CreatedAt:           user.CreatedAt,
 		Locale:              user.Locale,
 		Timezone:            user.Timezone,
 		Location:            user.Location,
