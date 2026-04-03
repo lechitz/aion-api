@@ -4,21 +4,26 @@
 
 ## Purpose
 
-This package makes Grafana startup deterministic by provisioning datasources and dashboards from versioned files.
+This folder stores Grafana datasources, dashboards, and provisioning assets used by the local observability stack.
 
 ## Current Layout
 
-| Folder | Purpose |
+| Area | Role |
 | --- | --- |
-| `dashboards/` | checked-in dashboard JSON, including RED and HTTP request views |
-| `datasources/` | Prometheus, Loki, and Jaeger datasource definitions |
-| `provisioning/` | dashboard provider configuration loaded at container startup |
+| `dashboards/` | dashboard JSON definitions |
+| `datasources/` | datasource provisioning |
+| `provisioning/` | Grafana provisioning structure |
 
-## Boundaries
+## Validate
 
-- dashboard JSON and datasource YAML are code artifacts and should be reviewed like source
-- datasource names must stay stable or existing dashboards will break
-- this package provisions Grafana only; scrape, storage, and transport behavior live in the other observability components
+- start the local stack
+- open Grafana
+- verify that datasources and dashboards provision without manual repair
+
+## Boundary Rules
+
+- keep dashboard truth in versioned assets, not in ad-hoc UI edits
+- if a dashboard depends on a new label or metric, update the matching collector or exporter config in the same PR
 
 ---
 

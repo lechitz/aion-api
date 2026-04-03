@@ -18,14 +18,14 @@
 
 ollama-up:
 	@echo "🚀 Starting Ollama service..."
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" | grep -q ollama-dev; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" | grep -q aion-dev-ollama; then \
 		echo "✅ Ollama is already running"; \
 	else \
 		export $$(cat $(ENV_FILE_DEV) | grep -v '^#' | xargs) && \
 		docker compose -f $(COMPOSE_FILE_DEV) up -d ollama; \
 		echo "⏳ Waiting for Ollama to be healthy..."; \
 		for i in $$(seq 1 30); do \
-			if docker exec ollama-dev ollama list >/dev/null 2>&1; then \
+			if docker exec aion-dev-ollama ollama list >/dev/null 2>&1; then \
 				echo "✅ Ollama is ready!"; \
 				break; \
 			fi; \
@@ -40,7 +40,7 @@ ollama-up:
 
 ollama-down:
 	@echo "🛑 Stopping Ollama service..."
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" | grep -q ollama-dev; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" | grep -q aion-dev-ollama; then \
 		export $$(cat $(ENV_FILE_DEV) | grep -v '^#' | xargs) && \
 		docker compose -f $(COMPOSE_FILE_DEV) stop ollama; \
 		echo "✅ Ollama stopped (volumes preserved)"; \
@@ -55,11 +55,11 @@ ollama-restart:
 ollama-status:
 	@echo "🔍 Ollama Status"
 	@echo "=================="
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" | grep -q ollama-dev; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" | grep -q aion-dev-ollama; then \
 		echo "✅ Container: Running"; \
 		echo ""; \
 		echo "📦 Installed models:"; \
-		docker exec ollama-dev ollama list 2>/dev/null || echo "   (error listing models)"; \
+		docker exec aion-dev-ollama ollama list 2>/dev/null || echo "   (error listing models)"; \
 		echo ""; \
 		echo "💾 Volume info:"; \
 		docker volume inspect dev_ollama-models --format "   Location: {{ .Mountpoint }}" 2>/dev/null || echo "   Volume not found"; \
@@ -79,7 +79,7 @@ ollama-status:
 ollama-logs:
 	@echo "📋 Ollama Logs (Ctrl+C to exit)"
 	@echo "==============================="
-	@docker logs -f ollama-dev
+	@docker logs -f aion-dev-ollama
 
 # ============================================================
 #                   MODEL MANAGEMENT
@@ -88,8 +88,8 @@ ollama-logs:
 ollama-models:
 	@echo "📦 Installed Ollama Models"
 	@echo "============================"
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" | grep -q ollama-dev; then \
-		docker exec ollama-dev ollama list; \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" | grep -q aion-dev-ollama; then \
+		docker exec aion-dev-ollama ollama list; \
 		echo ""; \
 		echo "Commands:"; \
 		echo "   make ollama-pull MODEL=<name>  → Download a specific model"; \
@@ -103,16 +103,16 @@ ollama-pull:
 	echo "📥 Downloading model: $$MODEL_NAME"; \
 	echo "   This may take 5-15 minutes depending on model size..."; \
 	echo ""; \
-	if ! docker ps --filter "name=ollama-dev" --filter "status=running" | grep -q ollama-dev; then \
+	if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" | grep -q aion-dev-ollama; then \
 		echo "⚠️  Ollama is not running. Starting..."; \
 		$(MAKE) ollama-up; \
 		echo ""; \
 	fi; \
-	docker exec ollama-dev ollama pull "$$MODEL_NAME" && \
+	docker exec aion-dev-ollama ollama pull "$$MODEL_NAME" && \
 	echo "" && \
 	echo "✅ Model downloaded successfully!" && \
 	echo "" && \
-	docker exec ollama-dev ollama list
+	docker exec aion-dev-ollama ollama list
 
 ollama-clean:
 	@echo "⚠️  DANGER: Remove Ollama volumes (including all models)"
@@ -126,9 +126,9 @@ ollama-clean:
 	if [ "$$confirmation" = "yes" ]; then \
 		echo ""; \
 		echo "🛑 Stopping Ollama..."; \
-		docker stop ollama-dev 2>/dev/null || true; \
+		docker stop aion-dev-ollama 2>/dev/null || true; \
 		echo "🗑️  Removing container..."; \
-		docker rm ollama-dev 2>/dev/null || true; \
+		docker rm aion-dev-ollama 2>/dev/null || true; \
 		echo "🗑️  Removing volume..."; \
 		docker volume rm dev_ollama-models 2>/dev/null || true; \
 		echo ""; \
@@ -145,7 +145,7 @@ ollama-clean:
 # Check if Ollama is running and warn if not
 .PHONY: _check-ollama-running
 _check-ollama-running:
-	@if ! docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
+	@if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo ""; \
 		echo "⚠️  NOTICE: Ollama is NOT running"; \
 		echo "   Chat service will not work without Ollama."; \

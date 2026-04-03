@@ -2,8 +2,8 @@
 # ==============================================================================
 # Observability Improvements - Apply & Validate
 # ==============================================================================
-# Date: 2025-12-14
-# Description: Applies and validates observability improvements (RED dashboard + exemplars)
+# Date: 2026-03-28
+# Description: Validates the current local observability stack (Grafana, Prometheus, Jaeger, Loki)
 # Estimated time: 5-10 minutes
 # ==============================================================================
 
@@ -90,10 +90,10 @@ print_header "PHASE 1: Checking created/updated files"
 files_to_check=(
     "infrastructure/observability/prometheus/prometheus.yml"
     "infrastructure/observability/grafana/datasources/jaeger.yaml"
-    "infrastructure/observability/grafana/dashboards/aion-api-red-dashboard.json"
-    "docs/observability-runbook.md"
-    "notes/v2/OBSERVABILITY_IMPLEMENTATION_GUIDE.md"
-    "notes/v2/OBSERVABILITY_SUMMARY.md"
+    "infrastructure/observability/grafana/datasources/loki.yaml"
+    "infrastructure/observability/grafana/datasources/prometheus.yaml"
+    "infrastructure/observability/grafana/dashboards/aionapi-red-dashboard.json"
+    "infrastructure/observability/grafana/dashboards/aionapi-http-requests-dashboard.json"
 )
 
 all_files_ok=true
@@ -107,7 +107,7 @@ for file in "${files_to_check[@]}"; do
 done
 
 if [ "$all_files_ok" = false ]; then
-    print_error "Some files are missing. Apply the implementation first."
+    print_error "Some required observability assets are missing."
     exit 1
 fi
 
@@ -315,7 +315,7 @@ if [ "$generate_traffic" = true ]; then
     print_info "Sending 100 requests..."
 
     for i in {1..100}; do
-        curl -s http://localhost:5001/aion/health > /dev/null 2>&1 || true
+        curl -s http://localhost:5001/aion/api/v1/health > /dev/null 2>&1 || true
         [ $((i % 20)) -eq 0 ] && echo -n "."
     done
 
@@ -330,7 +330,7 @@ fi
 # ==============================================================================
 print_header "IMPLEMENTATION SUMMARY"
 
-echo -e "${GREEN}✅ Stack restarted with new configurations${NC}"
+echo -e "${GREEN}✅ Stack restarted with current observability assets${NC}"
 echo -e "${GREEN}✅ Containers verified${NC}"
 echo -e "${GREEN}✅ Services validated${NC}"
 echo ""
@@ -341,9 +341,8 @@ echo -e "   • Jaeger:        ${YELLOW}http://localhost:16686${NC}"
 echo -e "   • Prometheus:    ${YELLOW}http://localhost:9090${NC}"
 echo ""
 echo -e "${BLUE}📚 Documentation:${NC}"
-echo -e "   • Implementation guide: ${YELLOW}notes/v2/OBSERVABILITY_IMPLEMENTATION_GUIDE.md${NC}"
-echo -e "   • Runbook:              ${YELLOW}docs/observability-runbook.md${NC}"
-echo -e "   • Summary:              ${YELLOW}notes/v2/OBSERVABILITY_SUMMARY.md${NC}"
+echo -e "   • Quickstart:           ${YELLOW}docs/observability-quickstart.md${NC}"
+echo -e "   • Performance guide:    ${YELLOW}docs/performance-readiness.md${NC}"
 echo ""
 echo -e "${BLUE}🎯 Next steps:${NC}"
 echo -e "   1. Open the RED dashboard in Grafana"
@@ -352,8 +351,9 @@ echo -e "   3. Click bars/points to test drill-down to Jaeger"
 echo -e "   4. Read the runbook to learn queries and workflows"
 echo ""
 echo -e "${BLUE}🐛 Issues?${NC}"
-echo -e "   • Logs: ${YELLOW}docker-compose logs <container>${NC}"
-echo -e "   • Troubleshooting: ${YELLOW}notes/v2/OBSERVABILITY_IMPLEMENTATION_GUIDE.md${NC} (Troubleshooting section)"
+echo -e "   • API logs:        ${YELLOW}make logs-api${NC}"
+echo -e "   • Grafana logs:    ${YELLOW}make logs-grafana${NC}"
+echo -e "   • Prometheus logs: ${YELLOW}make logs-prometheus${NC}"
 echo ""
 print_success "Implementation completed! 🎉"
 echo ""

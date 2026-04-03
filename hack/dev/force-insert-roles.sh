@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-CONTAINER="postgres-dev"
+CONTAINER="aion-dev-postgres"
 DB_USER="aion"
 DB_NAME="aion-api"
 

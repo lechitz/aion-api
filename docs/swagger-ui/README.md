@@ -4,36 +4,40 @@
 
 ## Purpose
 
-This folder contains the static Swagger UI bundle used for published documentation hosting.
-
-It is not the runtime HTTP implementation.
-The live API server mounts Swagger with `http-swagger` inside `internal/platform/server/http/composer.go`.
+This folder stores the static Swagger UI bundle published by the docs site.
 
 ## Current Relationship To Runtime
 
-- static hosting: files in this folder
-- live runtime mount: `${HTTP_CONTEXT}${HTTP_SWAGGER_MOUNT_PATH}`
-- docs alias redirect: `${HTTP_CONTEXT}${HTTP_DOCS_ALIAS_PATH}` -> `${HTTP_CONTEXT}${HTTP_SWAGGER_MOUNT_PATH}/index.html`
-- contract source: `contracts/openapi/swagger.json`
+- the runtime mounts the generated OpenAPI contract
+- this folder stores the static assets that render that contract in the published documentation surface
+- the REST contract authority still lives under `contracts/openapi`
 
 ## Files
 
-| File | Purpose |
+| File Pattern | Purpose |
 | --- | --- |
-| `index.html` | Static Swagger UI entrypoint |
-| `swagger-ui-bundle.js`, `swagger-ui.css` | Vendored upstream Swagger UI assets |
-| `custom.css` | Local presentation overrides for hosted docs |
+| static bundle assets | Swagger UI rendering support |
+| config or index assets | site-level wiring for the published REST explorer |
 
-## Rules
+## Validate
 
-- Regenerate the OpenAPI contract before reviewing or publishing UI output.
-- Keep static asset paths compatible with the GitHub Pages/docs hosting layout.
-- Do not treat this folder as the source of truth for REST behavior; it renders the generated contract.
-- After asset upgrades, verify both hosted docs and the runtime Swagger mount.
+```bash
+make swag
+make docs-verify
+```
+
+## Boundary Rules
+
+- do not edit this folder to redefine REST semantics
+- if the static UI depends on a new asset or config change, keep it aligned with the generated OpenAPI artifacts
+
+## Risks And Compatibility Notes
+
+- static bundle drift can make the published explorer stale even when the OpenAPI contract itself is correct
 
 ---
 
 <!-- doc-nav:start -->
 ## Navigation
-- [Back to root README](../index.md)
+- [Back to docs index](../index.md)
 <!-- doc-nav:end -->

@@ -1,28 +1,24 @@
-# infrastructure/docker/scripts
+# Docker Runtime Scripts
 
-Shell scripts used by Docker workflows, Make targets, and CI to build/run/clean the environment.
+**Path:** `infrastructure/docker/scripts`
+
+## Purpose
+
+This folder stores shell scripts used by Docker workflows, Make targets, and container startup.
 
 ## Package Composition
 
 - `entrypoint.sh`
-  - Container entrypoint for the API image.
+  - container entrypoint for the API image
 
-## Flow (Where it comes from -> Where it goes)
+## Boundary Rules
 
-Make/CI -> scripts -> docker build/run lifecycle
+- keep Docker concerns isolated from application code
+- make destructive actions explicit and opt-in
+- do not embed secrets in scripts
 
-## Why It Was Designed This Way
+## Validate
 
-- Keep Docker concerns isolated from application code.
-- Centralize environment initialization in one place.
-
-## Recommended Practices Visible Here
-
-- Prefer `.env.*` over hardcoded values.
-- Keep scripts portable (sh/bash) and documented.
-- Make destructive actions explicit and opt-in.
-
-## What Should NOT Live Here
-
-- Business logic or app behavior.
-- Secrets embedded in scripts.
+- build the image
+- start the stack
+- confirm the container boots through `entrypoint.sh` without manual patching

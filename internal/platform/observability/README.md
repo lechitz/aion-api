@@ -19,20 +19,27 @@ It initializes trace and metric exporters, normalizes OTLP settings, and defines
 
 - tracing and metrics both bootstrap from `cfg.Observability`
 - OTLP endpoints accept `host:port` or full `http(s)://...` values and are normalized before exporter creation
-- resource attributes include:
-  - `service.name`
-  - `service.version`
-  - `deployment.environment`
-  - `host.name`
-  - `service.instance.id`
-- tracing installs W3C `TraceContext` + `Baggage` propagators globally
+- resource attributes include service, environment, host, and instance identity
+- tracing installs W3C `TraceContext` and `Baggage` propagators globally
 - if exporter initialization fails, the app degrades gracefully and returns a no-op cleanup function instead of aborting startup
 
-## Boundaries
+## Boundary Rules
 
-- Instrumentation points live in handlers, controllers, usecases, repositories, and runtime boundaries outside this package.
-- Collector/container wiring belongs to `infrastructure/observability`.
-- Sampling and exporter behavior remain config-driven; do not hardcode environment-specific endpoints elsewhere.
+- instrumentation points live in handlers, controllers, usecases, repositories, and runtime boundaries outside this package
+- collector and container wiring belongs to `infrastructure/observability`
+- sampling and exporter behavior remain config-driven; do not hardcode environment-specific endpoints elsewhere
+
+## Validate
+
+```bash
+go test ./internal/platform/observability/...
+make verify
+```
+
+## Risks And Compatibility Notes
+
+- degraded startup is intentional, so observability regressions can hide behind a still-running service if validation is skipped
+- label and resource-attribute changes can break dashboards and telemetry queries even when code compiles
 
 ## Related Docs
 

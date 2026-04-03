@@ -5,7 +5,6 @@ Use this guide to apply and validate the local observability stack (Prometheus, 
 ## Prerequisites
 
 - Docker and Docker Compose running
-- Dev environment available (`infrastructure/docker/environments/dev`)
 - Local stack bootstrapped (`make dev`)
 
 ## Apply Observability Setup
@@ -15,6 +14,7 @@ Use this guide to apply and validate the local observability stack (Prometheus, 
 ```
 
 The script restarts required services and performs baseline checks.
+It validates the currently provisioned dashboards and datasources before checking endpoints.
 
 ## Validate Services
 
@@ -27,7 +27,7 @@ The script restarts required services and performs baseline checks.
 ## Generate Traffic
 
 ```bash
-for i in {1..50}; do curl -s http://localhost:8080/aion/health > /dev/null; done
+for i in {1..50}; do curl -s http://localhost:5001/aion/api/v1/health > /dev/null; done
 ```
 
 Then confirm traces and metrics appear in dashboards.
@@ -38,12 +38,32 @@ Then confirm traces and metrics appear in dashboards.
 2. Confirm latency, error-rate, and throughput panels are populated.
 3. Use trace links from exemplars to jump into Jaeger.
 
+## Record A Baseline
+
+For performance-ready documentation, capture at least:
+
+| Metric | Why it matters |
+| --- | --- |
+| request volume or smoke source | makes the observation reproducible |
+| p95 latency | catches slow-tail regressions |
+| error rate | separates slow from broken |
+| top slow endpoints | identifies where to zoom in |
+| trace exemplar or trace id | supports root-cause follow-up |
+
+If the flow under review is projection or realtime sensitive, combine dashboard data with:
+
+```bash
+make outbox-diagnose
+make record-projection-smoke
+make realtime-record-smoke
+```
+
 ## Loki Verification
 
 In Grafana Explore, choose Loki datasource and run:
 
 ```logql
-{container_name="/aion-api-dev"} | json
+{container_name="/aion-dev-api"} | json
 ```
 
 Filter by fields like `trace_id` and `request_id` to correlate logs with traces.
@@ -57,3 +77,4 @@ Filter by fields like `trace_id` and `request_id` to correlate logs with traces.
 ## Next Step
 
 Read [Platform Runtime](platform.md) for runtime-level observability wiring and conventions.
+For performance-specific documentation, use [Performance Readiness](performance-readiness.md).

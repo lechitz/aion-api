@@ -4,19 +4,23 @@
 
 ## Purpose
 
-This package configures Loki as the log store queried by Grafana.
+This folder stores the Loki config used by the local observability stack.
 
 ## Current File
 
-| File | Responsibility |
+| File | Purpose |
 | --- | --- |
-| `loki.yaml` | single-binary Loki config with filesystem storage and 7-day retention |
+| config file in this folder | log storage and query backend configuration |
 
-## Boundaries
+## Validate
 
-- ingestion labels must stay compatible with Fluent Bit output and Grafana queries
-- this config targets the current local and prod-like single-node setup, not a scaled Loki deployment
-- parser behavior belongs upstream in Fluent Bit, not here
+- start the stack
+- send logs through Fluent Bit
+- confirm queries return recent application logs
+
+## Boundary Rules
+
+- keep storage and query backend behavior here, not in dashboard or app docs
 
 ---
 

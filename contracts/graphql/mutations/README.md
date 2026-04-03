@@ -1,10 +1,12 @@
 # Shared GraphQL Mutations
 
+**Path:** `contracts/graphql/mutations`
+
 ## Purpose
 
 This folder contains the shared GraphQL mutation documents published for consumers and contract validation.
 
-Unlike ad-hoc consumer queries, files here are backend-owned artifacts and should stay aligned with:
+Unlike ad-hoc consumer mutations, files here are backend-owned artifacts and should stay aligned with:
 
 - the live schema modules in `internal/adapter/primary/graphql/schema/modules/`
 - the generated schema artifact in `docs/graphql/schema.graphql`
@@ -21,14 +23,22 @@ Unlike ad-hoc consumer queries, files here are backend-owned artifacts and shoul
 
 ## Current Contract Notes
 
-- Dashboard mutations are owned by the backend even when the dashboard drives the UX.
-- There is no shared GraphQL chat mutation surface here; chat write flows remain HTTP-driven in the current runtime.
-- Query and mutation inventories are sibling public surfaces; consumers should not assume one README supersedes the other.
+- dashboard mutations are owned by the backend even when the dashboard drives the UX
+- there is no shared GraphQL chat mutation surface here; chat write flows remain HTTP-driven in the current runtime
+- query and mutation inventories are sibling public surfaces; shared governance for both lives in [`../README.md`](../README.md)
 
 ## Validate
 
 ```bash
-make graphql.queries graphql.manifest graphql.validate
+make graphql.queries
+make graphql.manifest
+make graphql.validate
 ```
 
-See [`../queries/README.md`](../queries/README.md) for the complementary query inventory and the broader governance rules.
+## Risks And Compatibility Notes
+
+- mutation names and top-level argument meaning are compatibility-sensitive for generated clients and persisted workflows
+- dashboard mutations remain backend-owned even when UI layers own richer local layout presentation
+- if a mutation changes behavior materially, update the matching schema, shared operation document, and consumer-facing narrative docs together
+
+See [`../queries/README.md`](../queries/README.md) for the complementary query inventory.

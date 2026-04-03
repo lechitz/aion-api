@@ -13,21 +13,22 @@ The canonical REST contract still lives in `contracts/openapi/swagger.yaml`.
 | --- | --- |
 | `postman/aion-api.postman_collection.json` | Postman collection covering auth, user, admin, chat, GraphQL, and health flows |
 
-## Usage
+## Validate
 
 - import the collection into Postman
 - set `{{baseURL}}` to the target API origin
-- use collection variables or cookies for auth; never commit real tokens back into the file
+- use collection variables or cookies for auth
+- after changing REST or GraphQL flows, verify that the checked-in collection still exercises the intended happy paths
 
-## Boundaries
+## Boundary Rules
 
-- update this artifact when consumer-facing REST flows change materially
+- update this artifact when consumer-facing manual QA flows change materially
 - do not treat the collection as a source of truth over OpenAPI or runtime behavior
-- keep secrets, personal environments, and local-only values outside the checked-in JSON
+- keep secrets, personal profiles, and local-only values outside the checked-in JSON
 
 ---
 
 <!-- doc-nav:start -->
 ## Navigation
-- [Back to root README](../index.md)
+- [Back to docs index](../index.md)
 <!-- doc-nav:end -->

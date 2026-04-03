@@ -4,27 +4,28 @@
 
 ## Purpose
 
-This package routes OTLP telemetry emitted by Aion services.
+This folder stores collector config for trace and metric ingestion in the local observability stack.
 
 ## Current Pipeline
 
-| Stage | Behavior |
-| --- | --- |
-| Receiver | accepts OTLP over HTTP and gRPC |
-| Processor | filters health spans and batches telemetry |
-| Exporter | sends traces to Jaeger and exposes metrics for Prometheus scraping |
+- receive OTLP signals from services
+- normalize and route traces and metrics to downstream backends
 
 ## Source File
 
-| File | Responsibility |
+| File | Purpose |
 | --- | --- |
-| `otel-collector-config.yaml` | receiver, processor, and exporter wiring |
+| collector config in this folder | OTLP ingestion and exporter wiring |
 
-## Boundaries
+## Validate
 
-- attribute naming and span semantics remain owned by the application code
-- collector routing lives here, not in Grafana or Prometheus
-- if exporter endpoints change in compose, this config must change in the same PR
+- start the stack
+- hit instrumented endpoints
+- confirm traces and metrics reach the downstream backends
+
+## Boundary Rules
+
+- collector routing belongs here; application instrumentation belongs in `internal/platform/observability`
 
 ---
 

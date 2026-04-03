@@ -1,38 +1,32 @@
 # Application Entrypoints (`cmd`)
 
-**Path:** `cmd`
-
 ## Purpose
 
-`cmd` owns long-lived process entrypoints only.
-The current repo ships two binaries:
-
-| Folder | Binary | Role |
-| --- | --- | --- |
-| `api/` | `aion-api` | HTTP, GraphQL, health, and runtime bootstrap |
-| `outbox-publisher/` | `aion-api-outbox-publisher` | background publisher for durable outbox rows |
+`cmd` owns process entrypoints and bootstrap-only concerns.
 
 ## Current Flow
 
-- each command keeps `main.go` minimal and delegates to `runWithDeps`
-- bootstrap timeout parsing stays local to the entrypoint
-- the Fx composition root lives under `internal/platform/fxapp`
-- durable config, DB wiring, HTTP server, and Kafka adapters stay outside `cmd`
+| Entrypoint | Role |
+| --- | --- |
+| `cmd/api` | main API server process |
+| `cmd/outbox-publisher` | dedicated background publisher for pending outbox rows |
 
-## Boundaries
+## Boundary Rules
 
-- do not place domain, repository, or transport logic in `cmd`
-- add a new subfolder here only when a new binary/process exists
-- dev and lab tools belong under `hack/`, not beside runtime entrypoints
+- business logic does not belong in `cmd`
+- runtime composition belongs in `internal/platform/fxapp`
+- bootstrap-only parsing and signal handling may live here when they are process-specific
 
 ## Validate
 
 ```bash
 go run ./cmd/api
 go run ./cmd/outbox-publisher
-make dev
-make logs-api-publisher
 ```
+
+## Risks And Compatibility Notes
+
+- entrypoint drift is easy to hide because the app may still compile while booting the wrong module set
 
 ---
 

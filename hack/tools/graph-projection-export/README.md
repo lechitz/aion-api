@@ -1,5 +1,9 @@
 # Graph Projection Export
 
+**Path:** `hack/tools/graph-projection-export`
+
+## Purpose
+
 Internal tool for exporting the `graph-projection-v1` payload from canonical Aion entities.
 
 ## Usage
@@ -17,8 +21,15 @@ make graph-projection-export GRAPH_PROJECTION_USER_ID=999 GRAPH_PROJECTION_WINDO
 - optional: `--window`, `--date`, `--timezone`, `--category-id`, `--tag-ids`, `--output`
 - the `make graph-projection-export` target loads the dev env file, forces `DB_HOST=localhost`, and forwards those flags
 
-## Boundaries
+## Boundary Rules
 
 - this is a dev and debugging tool, not a public contract or runtime endpoint
 - graph rules remain owned by `internal/record/core/...`
 - the tool bootstraps config, DB, repositories, and canonical mappers; it should not fork business logic
+
+## Validate
+
+```bash
+go test ./hack/tools/graph-projection-export/...
+make graph-projection-export GRAPH_PROJECTION_USER_ID=999
+```

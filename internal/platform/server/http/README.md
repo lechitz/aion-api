@@ -64,6 +64,42 @@ go test ./internal/platform/server/http/...
 make verify
 ```
 
+## Performance Readiness
+
+Current transport-level performance validation is dashboard-driven plus versioned local load scenarios.
+
+Use this path:
+
+```bash
+make dev
+./infrastructure/observability/scripts/setup-improvements.sh
+make load-test-auth-login
+make load-test-record-projections
+make load-test-dashboard-snapshot
+make load-test-realtime-record-created
+```
+
+Then confirm in Grafana:
+
+- throughput is populated
+- error rate stays flat
+- p95 latency remains within the expected local baseline for the exercised routes
+- top slow endpoints remain explainable from traces
+
+The committed load scenarios exercise real transport paths:
+
+- `load-test-auth-login` covers the public auth HTTP boundary
+- `load-test-record-projections` covers the authenticated GraphQL read path used by derived record consumers
+- `load-test-dashboard-snapshot` covers the authenticated GraphQL dashboard aggregation path
+- `load-test-realtime-record-created` covers the authenticated SSE path until a projection-ready event is delivered
+
+For the full protocol, see [`../../../../docs/performance-readiness.md`](../../../../docs/performance-readiness.md).
+
+## Risks And Compatibility Notes
+
+- middleware order, route composition, and GraphQL mount behavior can shift latency across the whole transport surface even when no bounded-context code changes
+- health routes intentionally bypass part of the main instrumented path, so they are not representative latency probes for the full API
+
 ---
 
 <!-- doc-nav:start -->

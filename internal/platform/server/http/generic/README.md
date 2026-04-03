@@ -2,69 +2,62 @@
 
 **Path:** `internal/platform/server/http/generic`
 
-## Overview
+## Purpose
 
 This package contains platform-level generic HTTP components shared by all contexts.
-It provides health and fallback handlers (`404`, `405`, error, panic recovery) with consistent response envelopes, logging, and tracing.
+It provides health and fallback handlers with consistent response envelopes, logging, and tracing.
 
 ## Package Scope
 
 | Area | Responsibility |
 | --- | --- |
-| Health endpoint | Return service status and runtime metadata |
-| Router fallback handlers | Standardize `Not Found`, `Method Not Allowed`, and generic error behavior |
-| Panic recovery integration | Convert recovered panics into safe HTTP error responses |
-| Shared transport DTOs | Define transport-only payloads used by generic handlers |
+| Health endpoint | return service status and runtime metadata |
+| Router fallback handlers | standardize `404`, `405`, and router-level error behavior |
+| Panic recovery integration | convert recovered panics into safe HTTP error responses |
+| Shared transport DTOs | define transport-only payloads used by generic handlers |
 
 ## Subpackages
 
 | Subpackage | Role |
 | --- | --- |
-| `dto/` | Generic HTTP DTOs (currently health response payload) |
-| `handler/` | Generic handler implementation and tracing/logging constants |
+| `dto/` | generic HTTP DTOs, currently the health response payload |
+| `handler/` | generic handler implementation and tracing/logging constants |
 
 ## Main Components
 
 | Component | Description |
 | --- | --- |
-| `handler.New(logger, generalCfg)` | Creates `*handler.Handler` with logger and general app metadata |
-| `(*Handler).HealthCheck` | Handles `/health` and returns app metadata + healthy status |
-| `(*Handler).NotFoundHandler` | Standardized JSON `404` |
-| `(*Handler).MethodNotAllowedHandler` | Standardized JSON `405` |
-| `(*Handler).ErrorHandler` | Standardized JSON `500` for router-level errors |
-| `(*Handler).RecoveryHandler` | Handles panic recovery payloads and emits telemetry |
+| `handler.New(logger, generalCfg)` | creates `*handler.Handler` with logger and general app metadata |
+| `(*Handler).HealthCheck` | handles `/health` and returns app metadata plus healthy status |
+| `(*Handler).NotFoundHandler` | standardized JSON `404` |
+| `(*Handler).MethodNotAllowedHandler` | standardized JSON `405` |
+| `(*Handler).ErrorHandler` | standardized JSON `500` for router-level errors |
+| `(*Handler).RecoveryHandler` | handles panic recovery payloads and emits telemetry |
 
 ## Integration Flow
 
 1. HTTP composer creates `genericHandler := handler.New(log, cfg.General)`.
-2. Router wiring connects:
-- `/health` to `genericHandler.HealthCheck`
-- `SetNotFound` to `genericHandler.NotFoundHandler`
-- `SetMethodNotAllowed` to `genericHandler.MethodNotAllowedHandler`
-- `SetError` to `genericHandler.ErrorHandler`
+2. Router wiring connects fallback handlers and health routes to that handler.
 3. Recovery middleware delegates panic handling to `genericHandler.RecoveryHandler`.
 
-## Observability Behavior
+## Boundary Rules
 
-| Aspect | Behavior |
-| --- | --- |
-| Tracing | Creates spans for health, error, and recovery flows |
-| Span attributes | Includes request metadata (`path`, `request_id`, `ip`, `user_agent`) |
-| Logging | Emits structured logs with shared keys from `commonkeys`/`tracingkeys` |
-| Responses | Uses `httpresponse` helpers for consistent JSON envelopes |
+- this layer is transport/platform only and must not contain business rules
+- generic handlers provide the baseline fallback behavior for all bounded contexts
+- response shapes and status semantics must stay aligned with `httpresponse` and `sharederrors`
 
-## Design Notes
+## Validate
 
-- This layer is transport/platform only and should not contain business rules.
-- Generic handlers provide a stable baseline for all bounded contexts.
-- Constants in `handler/0_generic_handler_constants.go` centralize trace/log message semantics.
+```bash
+go test ./internal/platform/server/http/generic/...
+go test ./internal/platform/server/http/...
+```
 
-## Package Improvements
+## Risks And Compatibility Notes
 
-- Add dedicated tests for each generic handler (`health`, `404`, `405`, `error`, `recovery`) to lock response and tracing contracts.
-- Replace duplicated manual error body construction in `NotFoundHandler` and `MethodNotAllowedHandler` with a shared `httpresponse.WriteError` flow for consistency.
-- Consider moving tracer names and common messages to `internal/shared/constants/tracingkeys` when broadly reused outside this package.
-- Evaluate whether `HealthCheck` should support `HEAD` with empty body explicitly, depending on monitoring tool expectations.
+- health, `404`, `405`, router-level error, and panic-recovery responses are shared transport contracts
+- this package already has handler coverage in `handler/generic_handler_test.go`; if response shapes change, update those tests in the same PR
+- fallback behavior should stay centralized here so individual context handlers do not drift in transport semantics
 
 ---
 

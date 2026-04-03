@@ -16,8 +16,8 @@ APPLICATION_NAME := aion-api
 
 rebuild-dashboard:
 	@echo "Stopping and removing old aion-web container..."
-	@docker stop aion-web-dev 2>/dev/null || true
-	@docker rm aion-web-dev 2>/dev/null || true
+	@docker stop aion-dev-web 2>/dev/null || true
+	@docker rm aion-dev-web 2>/dev/null || true
 	@echo "Removing old aion-web image..."
 	@docker rmi aion-web:dev 2>/dev/null || true
 	@echo "Rebuilding aion-web..."
@@ -31,8 +31,8 @@ rebuild-dashboard:
 
 rebuild-chat:
 	@echo "Stopping and removing old aion-chat container..."
-	@docker stop aion-chat-dev 2>/dev/null || true
-	@docker rm aion-chat-dev 2>/dev/null || true
+	@docker stop aion-dev-chat 2>/dev/null || true
+	@docker rm aion-dev-chat 2>/dev/null || true
 	@echo "Removing old aion-chat image..."
 	@docker rmi aion-chat:dev 2>/dev/null || true
 	@echo "Rebuilding aion-chat..."
@@ -46,8 +46,8 @@ rebuild-chat:
 
 rebuild-api:
 	@echo "Stopping and removing old aion-api container..."
-	@docker stop aion-api-dev 2>/dev/null || true
-	@docker rm aion-api-dev 2>/dev/null || true
+	@docker stop aion-dev-api 2>/dev/null || true
+	@docker rm aion-dev-api 2>/dev/null || true
 	@echo "Removing old aion-api image..."
 	@docker rmi $(APPLICATION_NAME):dev 2>/dev/null || true
 	@echo "Rebuilding aion-api..."
@@ -82,7 +82,7 @@ dev-down:
 	@export $$(cat $(ENV_FILE_DEV) | grep -v '^#' | xargs) && \
 		docker compose -f $(COMPOSE_FILE_DEV) rm -f aion-api aion-api-outbox-publisher aion-chat aion-ingest aion-streams aion-streams-worker aion-web postgres redis kafka localstack jaeger otel-collector prometheus grafana loki fluent-bit 2>/dev/null || true
 	@echo ""
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "✅ Services stopped (Ollama still running)"; \
 		echo ""; \
 		echo "💡 Ollama is still RUNNING to preserve models"; \
@@ -102,7 +102,7 @@ rebuild-dev: build-dev
 	@echo "      💡 Use 'make dev' for fast startup without forced rebuild"
 	@echo ""
 	@echo "Starting/restarting services (preserving volumes)..."
-	@if ! docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
+	@if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "Starting Ollama..."; \
 		export $$(cat $(ENV_FILE_DEV) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_DEV) up -d ollama; \
 		sleep 2; \
@@ -112,7 +112,7 @@ rebuild-dev: build-dev
 	@echo ""
 	@echo "⏳ Waiting for Database to be ready..."
 	@for i in $$(seq 1 30); do \
-		if docker exec postgres-dev pg_isready -U aion -d aion-api >/dev/null 2>&1; then \
+		if docker exec aion-dev-postgres pg_isready -U aion -d aion-api >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -172,7 +172,7 @@ dev-fast:
 	@echo "[DEV-FAST] Starting services WITHOUT rebuilding images..."
 	@echo "      ⚡ Use this when you haven't changed ANY code (fastest option)"
 	@echo ""
-	@if ! docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
+	@if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "Starting Ollama..."; \
 		export $$(cat $(ENV_FILE_DEV) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_DEV) up -d ollama; \
 		sleep 2; \
@@ -181,7 +181,7 @@ dev-fast:
 	@echo ""
 	@echo "Waiting for Database..."
 	@for i in $$(seq 1 20); do \
-		if docker exec postgres-dev pg_isready -U aion -d aion-api >/dev/null 2>&1; then \
+		if docker exec aion-dev-postgres pg_isready -U aion -d aion-api >/dev/null 2>&1; then \
 			break; \
 		fi; \
 		sleep 1; \
@@ -345,7 +345,7 @@ clean-dev:
 	@docker volume ls -q | grep -E '(^|[-_])fluentbit-data$$' | xargs -r docker volume rm -f || true
 	@docker volume ls -q | grep -E '(^|[-_])localstack-data$$' | xargs -r docker volume rm -f || true
 	@echo ""
-	@if docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "✅ Cleanup complete (Ollama still running)"; \
 		echo ""; \
 		echo "💡 Ollama is still RUNNING to preserve models (~4-5GB)"; \
@@ -403,14 +403,14 @@ my:
 	@echo "   • Ollama-dev must be running (shared between dev/my)"
 	@echo "   • Run 'make ollama-up' if not running"
 	@echo ""
-	@if ! docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
-		echo "❌ ERROR: ollama-dev is not running!"; \
+	@if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
+		echo "❌ ERROR: aion-dev-ollama is not running!"; \
 		echo ""; \
 		echo "Start it with: make ollama-up"; \
 		echo ""; \
 		exit 1; \
 	fi
-	@echo "✅ ollama-dev is running"
+	@echo "✅ aion-dev-ollama is running"
 	@echo ""
 	@echo "⏳ Building aion-api:my..."
 	@DOCKER_BUILDKIT=1 docker build --progress=plain --build-arg BUILD_LDFLAGS="" -f infrastructure/docker/Dockerfile -t $(APPLICATION_NAME):my . || { echo "❌ Build failed"; exit 1; }
@@ -445,14 +445,14 @@ my-fast:
 	@echo "⚠️  Prerequisites:"
 	@echo "   • Ollama-dev must be running (shared between dev/my)"
 	@echo ""
-	@if ! docker ps --filter "name=ollama-dev" --filter "status=running" -q | grep -q .; then \
-		echo "❌ ERROR: ollama-dev is not running!"; \
+	@if ! docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
+		echo "❌ ERROR: aion-dev-ollama is not running!"; \
 		echo ""; \
 		echo "Start it with: make ollama-up"; \
 		echo ""; \
 		exit 1; \
 	fi
-	@echo "✅ ollama-dev is running"
+	@echo "✅ aion-dev-ollama is running"
 	@echo ""
 	@echo "⏳ Starting services (using existing images)..."
 	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) up -d
@@ -575,9 +575,9 @@ docker-prune-aion:
 	@echo "   ⚠️  This will NOT delete volumes (PostgreSQL data, Ollama models)"
 	@echo ""
 	@echo "→ Stopping Aion containers..."
-	@docker stop aion-api-dev aion-chat-dev aion-web-dev 2>/dev/null || true
+	@docker stop aion-dev-api aion-dev-chat aion-dev-web 2>/dev/null || true
 	@echo "→ Removing Aion containers..."
-	@docker rm aion-api-dev aion-chat-dev aion-web-dev 2>/dev/null || true
+	@docker rm aion-dev-api aion-dev-chat aion-dev-web 2>/dev/null || true
 	@echo "→ Removing Aion images..."
 	@docker rmi aion-api:dev aion-chat:dev aion-web:dev 2>/dev/null || true
 	@echo ""

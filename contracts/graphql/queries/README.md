@@ -1,34 +1,22 @@
-# Shared GraphQL Operations
+# Shared GraphQL Queries
 
-**Path:** `contracts/graphql`
+**Path:** `contracts/graphql/queries`
 
-## Overview
+## Purpose
 
-This folder stores reusable GraphQL operation documents aligned with the backend schema.
-It is intended to be the shared contract surface consumed by Aion clients.
+This folder stores reusable shared read operations aligned with the backend schema.
+It is the query half of the published GraphQL contract surface consumed by Aion clients and tools.
 
-For v1 insight and analytics work, this folder is not optional documentation.
-It is part of the canonical consumer contract and must remain aligned with:
-
-1. schema modules under `internal/adapter/primary/graphql/schema/modules/`
-2. generated server artifacts
-3. downstream typed consumers in dashboard/chat layers
-
-## Structure
+## Current Areas
 
 | Folder | Scope |
 | --- | --- |
-| `manifest.json` | Deterministic index of shared operations and checksums |
-| `queries/categories/` | Category read operations |
-| `queries/tags/` | Tag read operations |
-| `queries/records/` | Record read operations |
-| `queries/chat/` | Chat read operations |
-| `queries/user/` | User read operations |
-| `queries/dashboard/` | Dashboard and insight read operations |
-| `mutations/categories/` | Category write operations |
-| `mutations/tags/` | Tag write operations |
-| `mutations/records/` | Record write operations |
-| `mutations/dashboard/` | Dashboard and metric write operations |
+| `categories/` | category read operations |
+| `tags/` | tag read operations |
+| `records/` | record read operations |
+| `chat/` | chat read operations |
+| `user/` | user read operations |
+| `dashboard/` | dashboard, insight, and analytics reads |
 
 ## Query Inventory
 
@@ -76,24 +64,14 @@ It is part of the canonical consumer contract and must remain aligned with:
 - `queries/dashboard/widget-catalog.graphql`
 - `queries/dashboard/suggest-metric-definitions.graphql`
 
-Dashboard widget contract note:
+## Contract Notes
 
-- `queries/dashboard/widget-catalog.graphql` is the canonical coarse catalog for
-  v1, not a full UI-layout schema
-- the backend owns widget types, coarse sizes, and `maxLargeWidgets`
-- the richer layout grammar stored in `configJson` remains dashboard-owned for
-  now, including grid dimensions and free placement coordinates
-- `INSIGHT_FEED` remains the only widget type that is valid without
-  `metricDefinitionId`
-
-## v1 Insight and Analytics Contract Notes
-
-Canonical operations:
+Canonical v1 intelligence queries:
 
 - `InsightFeed`
 - `AnalyticsSeries`
 
-Current scope model shared by both operations:
+Shared scope model:
 
 - `window`
 - optional `date`
@@ -101,65 +79,37 @@ Current scope model shared by both operations:
 - optional `categoryId`
 - optional `tagIds`
 
-Current v1 restriction:
+Dashboard widget contract note:
 
-- `AnalyticsSeries` is intentionally narrow and currently centered on `records.count`
+- `queries/dashboard/widget-catalog.graphql` is the canonical coarse catalog for v1, not a full UI-layout schema
+- the backend owns widget types, coarse sizes, and `maxLargeWidgets`
+- the richer layout grammar stored in `configJson` remains dashboard-owned for now
+- `INSIGHT_FEED` remains the only widget type that is valid without `metricDefinitionId`
 
-Consumer compatibility rules:
+## Boundary Rules
 
-- additive changes are preferred
-- field removal or meaning changes require explicit coordinated updates across `aion-api`, `aion-web`, and `aion-chat`
-- the first insight returned by `InsightFeed` is the dominant insight for that scope
-- consumers may humanize wording, but they must not reinterpret business meaning
+- keep query documents stable for observability, typed-client generation, and cache behavior
+- selection-set changes should stay additive unless all downstream consumers are updated together
+- shared governance for the whole GraphQL surface lives in [`../README.md`](../README.md); this README should stay query-focused
 
-Governance reference:
+## Validate
 
-- `aion-docs/planning/v1/adr/adr-005-insight-contract-policy.md`
-- `aion-docs/planning/v1/reference/dashboard-backend-consumption.md`
+```bash
+make graphql.queries
+make graphql.manifest
+make graphql.validate
+```
 
-## Mutation Inventory
+## Risks And Compatibility Notes
 
-### Categories
-- `mutations/categories/create.graphql`
-- `mutations/categories/update.graphql`
-- `mutations/categories/delete.graphql`
-
-### Tags
-- `mutations/tags/create.graphql`
-- `mutations/tags/update.graphql`
-- `mutations/tags/delete.graphql`
-
-### Records
-- `mutations/records/create.graphql`
-- `mutations/records/update.graphql`
-- `mutations/records/delete.graphql`
-- `mutations/records/delete-all.graphql`
-
-### Dashboard
-- `mutations/dashboard/upsert-metric-definition.graphql`
-- `mutations/dashboard/upsert-goal-template.graphql`
-- `mutations/dashboard/delete-goal-template.graphql`
-- `mutations/dashboard/create-view.graphql`
-- `mutations/dashboard/set-default-view.graphql`
-- `mutations/dashboard/upsert-widget.graphql`
-- `mutations/dashboard/reorder-widgets.graphql`
-- `mutations/dashboard/delete-widget.graphql`
-- `mutations/dashboard/create-metric-and-widget.graphql`
-
-## Notes
-
-- Live schema modules and backend behavior remain the top authority if a shared document lags behind.
-- Keep operation names stable for observability and client cache behavior.
-- Keep selection sets consistent across clients unless a consumer needs a narrower shape.
-- Validate operation documents against current schema in CI.
-- Regenerate contract files + manifest with: `make graphql.queries graphql.manifest`.
-- Validate schema compatibility with: `make graphql.validate`.
-- Treat `queries/dashboard/insight-feed.graphql` and `queries/dashboard/analytics-series.graphql` as backend-owned public contracts for v1 surfaces such as `Radar`, `Analytics`, and MCP read tools.
-- Treat record projection queries as the preferred read surface for derived dashboard/chat consumers; legacy `recordsLatest` remains available for compatibility while downstream migration completes.
+- `queries/dashboard/insight-feed.graphql` and `queries/dashboard/analytics-series.graphql` are backend-owned public contracts for v1 intelligence surfaces
+- record projection queries are the preferred shared read surface for derived dashboard and chat consumers while compatibility migration completes
+- if a shared query lags behind live behavior, correct the document in the same PR instead of compensating in consumer-specific docs
 
 ---
 
 <!-- doc-nav:start -->
 ## Navigation
+- [Back to parent layer](../README.md)
 - [Back to root README](../../../README.md)
 <!-- doc-nav:end -->

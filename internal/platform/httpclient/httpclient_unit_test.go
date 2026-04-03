@@ -35,6 +35,7 @@ func TestNewInstrumentedClient_DefaultTimeoutAndTransport(t *testing.T) {
 	client := httpclient.NewInstrumentedClient(httpclient.Options{})
 	if client == nil {
 		t.Fatal("expected non-nil client")
+		return
 	}
 	if client.Timeout != 15*time.Second {
 		t.Fatalf("unexpected default timeout: %s", client.Timeout)

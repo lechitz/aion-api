@@ -4,19 +4,23 @@
 
 ## Purpose
 
-This package defines Prometheus scraping for the local observability stack.
+This folder stores Prometheus scrape configuration for the local observability stack.
 
 ## Current File
 
-| File | Responsibility |
+| File | Purpose |
 | --- | --- |
-| `prometheus.yml` | scrapes the OTEL collector metrics endpoint every 5 seconds |
+| scrape config in this folder | target discovery and scrape rules |
 
-## Boundaries
+## Validate
 
-- new scrape targets should only be added when they are intentionally part of the local operator surface
-- metric naming and labels remain owned by the emitting services and OTEL pipeline
-- dashboards that depend on new metrics should ship with scrape changes in the same PR
+- start the stack
+- confirm the expected scrape targets are healthy
+- verify key application metrics appear in Prometheus
+
+## Boundary Rules
+
+- scrape target ownership belongs here; metric instrumentation belongs in application code
 
 ---
 

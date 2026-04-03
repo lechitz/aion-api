@@ -2,18 +2,18 @@
 
 **Path:** `tests/setup`
 
-## Overview
+## Purpose
 
-Shared test builders and helpers for unit testing service/usecase layers.
+Shared test builders and helpers for unit testing service and usecase layers.
 These helpers reduce boilerplate around gomock setup and default fixtures.
 
 ## Responsibilities
 
 | Area | Responsibility |
 | --- | --- |
-| Suite builders | Build ready-to-use test suites per domain service |
-| Mock wiring | Create and expose required mocks consistently |
-| Shared fixtures | Provide default entities/helpers for tests |
+| suite builders | build ready-to-use test suites per domain service |
+| mock wiring | create and expose required mocks consistently |
+| shared fixtures | provide default entities and helpers for tests |
 
 ## Usage Pattern
 
@@ -22,18 +22,22 @@ suite := setup.UserServiceTest(t)
 defer suite.Ctrl.Finish()
 ```
 
-## Design Notes
+## Boundary Rules
 
-- Keep helpers deterministic and focused.
-- Favor explicit fixture builders over hidden global state.
-- Keep suite APIs stable across refactors.
+- keep helpers deterministic and focused
+- favor explicit fixture builders over hidden global state
+- keep suite APIs stable across refactors
 
-## Package Improvements
+## Validate
 
-- Add helper index table (builder -> mocks -> SUT).
-- Add extension guide for adding new service test suites.
-- Add stricter naming conventions for suite fields.
-- Add examples covering error-path assertions.
+```bash
+go test ./tests/setup/...
+go test ./internal/...
+```
+
+## Risks And Compatibility Notes
+
+- helper drift can hide missing mock expectations or overfit tests to implementation details
 
 ---
 

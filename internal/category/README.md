@@ -21,16 +21,29 @@ There is no dedicated REST category surface in the current runtime.
 
 ## Runtime Contract
 
-- core usecases own create/read/update/soft-delete semantics
+- core usecases own create, read, update, and soft-delete semantics
 - cache adapters support lookup by id, by name, and list results
 - DB adapters remain the authority for persistence and ownership checks
 - domain output carries `usageCount` and `lastUsedAt`, which are consumed by higher-level product surfaces
 
-## Boundaries
+## Boundary Rules
 
-- Category rules stay user-scoped and must not leak cross-user data.
-- Relationship semantics with tags and records belong here and in the collaborating repositories/adapters, not in transport code.
-- Transport controllers only map GraphQL types and user context into category commands.
+- category rules stay user-scoped and must not leak cross-user data
+- relationship semantics with tags and records belong here and in the collaborating repositories or adapters, not in transport code
+- transport controllers only map GraphQL types and user context into category commands
+
+## Validate
+
+```bash
+go test ./internal/category/...
+go test ./internal/adapter/primary/graphql/...
+make verify
+```
+
+## Risks And Compatibility Notes
+
+- relation consistency with tags and records is compatibility-sensitive for dashboard and search surfaces
+- if category ownership or soft-delete semantics change, update related tag and record docs in the same PR
 
 ## Related Docs
 

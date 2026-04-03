@@ -3,7 +3,7 @@
 set -euo pipefail
 
 MODEL_NAME="qwen2.5:7b-instruct-q4_K_M"
-CONTAINER_NAME="ollama-dev"
+CONTAINER_NAME="aion-dev-ollama"
 
 echo "🔍 Checking Ollama model availability..."
 

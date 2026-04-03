@@ -4,7 +4,7 @@
 
 ## Purpose
 
-This folder owns the container image and compose wiring used to run `aion-api` in local, personal, and prod-like profiles.
+This folder owns the container image, entrypoint, and Docker-facing runtime assets used to run `aion-api`.
 
 ## Current Layout
 
@@ -12,10 +12,7 @@ This folder owns the container image and compose wiring used to run `aion-api` i
 | --- | --- |
 | `Dockerfile` | multi-stage image that builds `aion-api` and `aion-api-outbox-publisher` |
 | `scripts/entrypoint.sh` | default container entrypoint; starts `aion-api` |
-| `environments/dev/` | integrated hot-reload stack used in the multi-repo workspace |
-| `environments/my/` | personal isolated stack with its own compose and env files |
-| `environments/prod/` | prod-like compose profile |
-| `environments/example/` | env template for creating new profiles |
+| profile-specific compose assets in this area | runtime wiring for local and prod-like execution paths |
 
 ## Operational Flows
 
@@ -23,18 +20,29 @@ This folder owns the container image and compose wiring used to run `aion-api` i
 make build-dev
 make dev
 make rebuild-dev
-make my
 make prod-up
 ```
 
-The `dev` profile also runs the outbox publisher, observability stack, and sibling services from `aion-chat`, `aion-web`, `aion-ingest`, and `aion-streams`.
+The main local stack also runs the outbox publisher, observability stack, and sibling services from `aion-chat`, `aion-web`, `aion-ingest`, and `aion-streams`.
 
-## Boundaries
+## Boundary Rules
 
 - an isolated clone of `aion-api` can build the image, but the full `make dev` flow assumes the complete `/Aion` workspace
-- keep environment-specific values in profile env files, not in the root `Dockerfile`
+- keep machine-specific values out of the root `Dockerfile`
 - if container behavior differs from runtime code, the entrypoint script, compose profile, and Make targets are the canonical sources
 - this folder owns image and compose wiring only; app configuration remains in `internal/platform/config`
+
+## Validate
+
+```bash
+make build-dev
+make dev
+```
+
+## Risks And Compatibility Notes
+
+- image, entrypoint, and compose wiring must stay aligned with `cmd/api`, `cmd/outbox-publisher`, and `internal/platform/config`
+- the Docker surface is workspace-aware; document local assumptions here rather than leaking them into unrelated runtime READMEs
 
 ---
 

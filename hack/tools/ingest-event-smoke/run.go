@@ -31,8 +31,17 @@ type ingestEnvelope struct {
 	PayloadJSON   json.RawMessage `json:"payload_json"`
 }
 
+type smokePayload struct {
+	Steps      int    `json:"steps"`
+	CapturedAt string `json:"captured_at"`
+	SmokeNonce string `json:"smoke_nonce"`
+}
+
 func run(ctx context.Context, cfg config) error {
-	payload := []byte(`{"steps":42,"captured_at":"2026-03-13T16:30:00Z"}`)
+	payload, err := buildPayload(time.Now().UTC())
+	if err != nil {
+		return err
+	}
 	expectedEventID := sha1Hex([]byte(strings.TrimSpace(cfg.source) + ":" + string(payload)))
 	expectedRawRef := "/data/raw/" + rawPayloadBucket + "/" + sanitizeSource(cfg.source) + "/" + expectedEventID + ".json"
 
@@ -65,6 +74,16 @@ func run(ctx context.Context, cfg config) error {
 
 	_, _ = fmt.Fprintf(os.Stdout, "ingest event smoke passed for event_id=%s\n", envelope.EventID)
 	return nil
+}
+
+func buildPayload(now time.Time) ([]byte, error) {
+	payload := smokePayload{
+		Steps:      42,
+		CapturedAt: "2026-03-13T16:30:00Z",
+		SmokeNonce: now.UTC().Format(time.RFC3339Nano),
+	}
+
+	return json.Marshal(payload)
 }
 
 func postWebhook(ctx context.Context, cfg config, payload []byte) error {

@@ -6,7 +6,9 @@
 
 This folder publishes the consumer-facing REST contract used by Swagger UI, static docs hosting, and client generation.
 
-Authority order for REST remains:
+## Authority Order
+
+For REST behavior, use this order:
 
 1. live handler behavior and annotated routes in `internal/*/adapter/primary/http/handler`
 2. generated OpenAPI artifacts in this folder
@@ -16,8 +18,8 @@ Authority order for REST remains:
 
 | File | Purpose |
 | --- | --- |
-| `swagger.yaml` | Published OpenAPI document in YAML |
-| `swagger.json` | Published OpenAPI document in JSON |
+| `swagger.yaml` | published OpenAPI document in YAML |
+| `swagger.json` | published OpenAPI document in JSON |
 | `docs.go` | `swag`-generated Go metadata consumed by Swagger tooling |
 
 ## Current Surface
@@ -31,7 +33,7 @@ The published REST contract documents the annotated HTTP endpoints owned by the 
 
 GraphQL is intentionally out of scope for this folder.
 
-## Workflow
+## Validate
 
 Regenerate the contract after changing annotated HTTP handlers:
 
@@ -46,12 +48,16 @@ openapi-generator-cli generate -i contracts/openapi/swagger.json -g typescript-a
 openapi-generator-cli generate -i contracts/openapi/swagger.json -g python -o clients/python
 ```
 
-## Rules
+## Boundary Rules
 
-- Handler behavior and annotations must change in the same PR as contract regeneration.
-- Treat `swagger.yaml`, `swagger.json`, and `docs.go` as generated artifacts.
-- Validate the published UI at `${HTTP_CONTEXT}${HTTP_SWAGGER_MOUNT_PATH}` or `${HTTP_CONTEXT}${HTTP_DOCS_ALIAS_PATH}` after regeneration.
-- Do not describe GraphQL, Kafka, or SSE contracts here; keep this folder REST-only.
+- handler behavior and annotations must change in the same PR as contract regeneration
+- treat `swagger.yaml`, `swagger.json`, and `docs.go` as generated artifacts
+- do not describe GraphQL, Kafka, or SSE contracts here; keep this folder REST-only
+
+## Risks And Compatibility Notes
+
+- REST shape changes are consumer-visible even when handlers remain locally correct
+- validate the published UI after regeneration so the generated contract and served docs do not drift
 
 ---
 

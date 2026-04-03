@@ -1,40 +1,27 @@
-# infrastructure/observability/scripts
+# Observability Helper Scripts
 
-Automation scripts for applying and validating observability improvements in the dev stack.
+**Path:** `infrastructure/observability/scripts`
+
+## Purpose
+
+This folder stores helper automation for validating and refreshing observability wiring in the local stack.
 
 ## Package Composition
 
 - `setup-improvements.sh`
-  - Validates configs, restarts the Docker stack, and checks endpoints.
+  - validate current observability assets, restart the stack, and check key endpoints plus Grafana provisioning
 
-## Flow (Where it comes from -> Where it goes)
+## Boundary Rules
 
-Developer run -> script validation -> docker compose restart -> observability endpoints
+- helper scripts are operational support, not the source of truth for telemetry topology
+- production deployment logic and secrets do not belong here
 
-## Why It Was Designed This Way
-
-- Make observability setup repeatable.
-- Reduce manual steps and drift.
-- Provide fast feedback on health and wiring.
-
-## Recommended Practices Visible Here
-
-- Keep scripts idempotent and safe to re-run.
-- Validate endpoints before declaring success.
-- Avoid embedding credentials in scripts.
-
-## Differentials
-
-- Automated validation of Grafana/Prometheus/Jaeger/OTel wiring.
-
-## What Should NOT Live Here
-
-- Production deployment logic.
-- Environment secrets or tokens.
-- Application runtime logic.
-
-## How to Run
+## Validate
 
 ```bash
 ./infrastructure/observability/scripts/setup-improvements.sh
 ```
+
+## Risks And Compatibility Notes
+
+- script success is useful but not sufficient; config files remain the canonical wiring definition

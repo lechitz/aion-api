@@ -1,28 +1,16 @@
 # Review (aion-api)
 
-This folder contains review checklists used to validate changes before merge. These rubrics define what reviewers must verify across architecture, security, and observability.
+## Purpose
+
+This folder stores review checklists and rubrics used to assess code quality, architecture compliance, and safety in `aion-api`.
 
 ## What You Will Find Here
 
-- `architecture.md`   Architecture compliance checklist
-- `security.md`       Security review checklist
-- `observability.md`  Tracing/logging review checklist
+- architecture-focused review guidance
+- quality and safety checks tied to local standards
 
 ## How To Use
 
-1) Identify the type of change (feature, refactor, infra, tests).
-2) Apply the relevant checklist(s).
-3) Record findings and request fixes before approval.
-
-## Principles
-
-- Reviews protect invariants and prevent regressions.
-- Security and observability are non-negotiable.
-- Prefer small, actionable findings.
-
-## Related Docs
-
-- `agents/main.md`
-- `agents/personas/`
-- `agents/standards/`
-- `agents/playbooks/`
+1. select the rubric that matches the change
+2. review against boundary, dependency, and testing rules
+3. report findings with concrete file paths and risks

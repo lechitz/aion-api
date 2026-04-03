@@ -2,7 +2,7 @@
 
 **Path:** `makefiles`
 
-## Overview
+## Purpose
 
 Modular Makefile fragments included by the root `Makefile`.
 They centralize commands for build, environment, migrations, codegen, tests, and quality workflows.
@@ -11,48 +11,56 @@ They centralize commands for build, environment, migrations, codegen, tests, and
 
 | Area | Responsibility |
 | --- | --- |
-| Command modularization | Split make targets by concern/domain |
-| Developer workflow | Expose reproducible local commands |
-| CI parity | Keep local verify steps aligned with pipeline checks |
+| command modularization | split make targets by concern or domain |
+| developer workflow | expose reproducible local commands |
+| CI parity | keep local verify steps aligned with pipeline checks |
 
 ## Typical Command Areas
 
-- Docker/runtime
-- Migrations/seeds
-- Codegen (GraphQL/mocks)
-- Tests/coverage
-- Lint/format/verify
+- Docker and runtime
+- migrations and seeds
+- codegen such as GraphQL and mocks
+- tests and coverage
+- performance-readiness smokes and diagnostics
+- versioned local load scenarios
+- lint and verify
 
-## Dashboard Demo Workflow
+## Performance-Ready Commands
 
-For a realistic local environment with white-label dashboard backend tables and seeded test profile:
+These commands are the current repo-supported performance-readiness path:
 
 ```bash
-make db-full
-# or alias
-make db-test
+make outbox-diagnose
+make record-projection-smoke
+make realtime-record-smoke
+make record-projection-page-smoke
+make load-test-auth-login
+make load-test-record-projections
+make load-test-dashboard-snapshot
+make load-test-realtime-record-created
+make event-backbone-gate
 ```
 
-`db-full` now provisions:
-- canonical metric definitions (shared across dashboard views),
-- white-label views (`Equilíbrio`, `Produtividade`, `Saúde`, `Principal`),
-- widgets already linked to canonical metrics,
-- ~3 months of realistic records (including current day),
-- automatic Redis cache flush at the end (avoids stale taxonomy/records views),
-- test login: `testuser / Test@123`.
+`make event-backbone-gate` is the strongest integrated readiness signal because it combines the backend smokes with the dashboard records E2E.
+`make load-test-baseline` is the current versioned local load layer; it enforces committed thresholds for auth login, derived record GraphQL reads, dashboard snapshot aggregation, and realtime SSE delivery.
+These commands are not microbenchmarks. They validate system behavior at the boundaries where latency and pipeline health matter most today.
+The realtime load target is intentionally preconfigured with a smaller request profile than the synchronous scenarios because it measures the full async chain from record creation through outbox, Kafka, projection, and SSE delivery.
 
-## Design Notes
+## Boundary Rules
 
-- Keep root `Makefile` thin; logic belongs in modules.
-- Keep target naming predictable and discoverable.
-- Keep environment variable requirements documented.
+- keep the root `Makefile` thin; logic belongs in modules
+- keep target naming predictable and discoverable
+- keep environment variable requirements documented near the target that uses them
 
-## Package Improvements
+## Validate
 
-- Add generated command reference table from make metadata.
-- Add dependency map between major targets (`verify`, `test`, `graphql`, etc.).
-- Add target stability policy for CI-consumed commands.
-- Add troubleshooting section for common tooling failures.
+```bash
+make verify
+```
+
+## Risks And Compatibility Notes
+
+- target drift creates confusion between local workflows and CI behavior even when the commands still exist
 
 ---
 

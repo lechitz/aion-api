@@ -4,25 +4,29 @@
 
 ## Purpose
 
-This folder holds static assets consumed by the MkDocs site.
-It does not ship runtime assets for the API or dashboard.
+This folder stores static assets consumed by the published documentation site.
 
 ## Current Files
 
-| Path | Used by | Purpose |
-| --- | --- | --- |
-| `logo/Aion.png` | `mkdocs.yml` logo and favicon | branding for the published docs site |
-| `stylesheets/extra.css` | `mkdocs.yml` `extra_css` | small visual overrides for the docs theme |
+| Area | Role |
+| --- | --- |
+| `logo/` | branding assets used by the docs site |
+| `stylesheets/` | documentation-specific style overrides |
 
-## Boundaries
+## Boundary Rules
 
-- keep file names stable when they are referenced from `mkdocs.yml`
-- store only documentation-facing assets here
-- runtime media for product surfaces belongs in the owning repo or delivery bucket, not under `docs/assets`
+- keep only documentation-site assets here
+- generated or third-party assets should remain traceable to their source workflow
+- application runtime assets do not belong in this folder
+
+## Validate
+
+- check the local or published docs site after changing branding or stylesheet assets
+- keep file names stable when the site configuration depends on them
 
 ---
 
 <!-- doc-nav:start -->
 ## Navigation
-- [Back to root README](../index.md)
+- [Back to docs index](../index.md)
 <!-- doc-nav:end -->

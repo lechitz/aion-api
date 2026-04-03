@@ -29,11 +29,11 @@ echo ""
 
 # Teste 2: Verificar modelo Ollama
 echo "2️⃣  Verificando modelo Ollama..."
-if docker exec ollama-dev ollama list | grep -q "qwen2.5:7b-instruct-q4_K_M"; then
+if docker exec aion-dev-ollama ollama list | grep -q "qwen2.5:7b-instruct-q4_K_M"; then
     echo -e "${GREEN}✓ Modelo qwen2.5:7b-instruct-q4_K_M está instalado${NC}"
 else
     echo -e "${RED}✗ Modelo não está instalado${NC}"
-    echo "Execute: docker exec ollama-dev ollama pull qwen2.5:7b-instruct-q4_K_M"
+    echo "Execute: docker exec aion-dev-ollama ollama pull qwen2.5:7b-instruct-q4_K_M"
     exit 1
 fi
 

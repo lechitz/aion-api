@@ -1,0 +1,22 @@
+{
+  "auth-login": {
+    "max_error_rate_pct": 0,
+    "max_p50_ms": 100,
+    "max_p95_ms": 150
+  },
+  "record-projections-latest": {
+    "max_error_rate_pct": 0,
+    "max_p50_ms": 25,
+    "max_p95_ms": 75
+  },
+  "dashboard-snapshot": {
+    "max_error_rate_pct": 0,
+    "max_p50_ms": 15,
+    "max_p95_ms": 50
+  },
+  "realtime-record-created": {
+    "max_error_rate_pct": 0,
+    "max_p50_ms": 12500,
+    "max_p95_ms": 16500
+  }
+}

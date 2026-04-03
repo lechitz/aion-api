@@ -24,14 +24,27 @@ There is no dedicated REST tag surface in the current runtime.
 
 - tags remain owned by one user and one category
 - core usecases enforce uniqueness, ownership, and category relation rules
-- cache adapters support id/name/category/list lookups
+- cache adapters support id, name, category, and list lookups
 - DB persistence is authoritative and backs derived fields such as `usageCount` and `lastUsedAt`
 
-## Boundaries
+## Boundary Rules
 
-- Transport controllers should only map GraphQL types and authenticated user context.
-- Tag/category consistency belongs in the tag and category cores plus their repositories.
-- Record queries may consume tag semantics, but tag lifecycle ownership stays here.
+- transport controllers should only map GraphQL types and authenticated user context
+- tag and category consistency belongs in the tag and category cores plus their repositories
+- record queries may consume tag semantics, but tag lifecycle ownership stays here
+
+## Validate
+
+```bash
+go test ./internal/tag/...
+go test ./internal/adapter/primary/graphql/...
+make verify
+```
+
+## Risks And Compatibility Notes
+
+- category relation rules are compatibility-sensitive for record filters and dashboard grouping
+- if tag ownership or soft-delete semantics change, update related category and record docs in the same PR
 
 ## Related Docs
 

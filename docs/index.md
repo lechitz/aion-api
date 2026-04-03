@@ -23,6 +23,7 @@ aion-api is a modular Go backend that powers habit, diary, and structured person
 2. [Getting Started](getting-started.md)
 3. [System Design](architecture.md)
 4. [Platform Runtime](platform.md)
+5. [Performance Readiness](performance-readiness.md)
 
 ## Quick Links
 

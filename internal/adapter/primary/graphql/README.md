@@ -2,7 +2,7 @@
 
 **Path:** `internal/adapter/primary/graphql`
 
-## Overview
+## Purpose
 
 This package is the central GraphQL transport entrypoint for the application.
 It hosts schema composition, gqlgen-generated artifacts, directive wiring, and thin resolvers that delegate to context controllers.
@@ -11,64 +11,70 @@ It hosts schema composition, gqlgen-generated artifacts, directive wiring, and t
 
 | Area | Responsibility |
 | --- | --- |
-| Server setup | Build GraphQL HTTP handler and configure transports/middlewares |
-| Schema composition | Maintain root schema and module-based schema extensions |
-| Directive wiring | Register cross-cutting directives (currently `@auth`) |
-| Resolver bridge | Convert GraphQL inputs/context into controller calls |
-| Codegen integration | Define gqlgen generation targets/configuration |
+| Server setup | build the GraphQL HTTP handler and configure transports or middleware |
+| Schema composition | maintain root schema and module-based schema extensions |
+| Directive wiring | register cross-cutting directives such as `@auth` |
+| Resolver bridge | convert GraphQL inputs and context into controller calls |
+| Codegen integration | define gqlgen generation targets and configuration |
 
 ## Structure
 
 | Path | Role |
 | --- | --- |
-| `schema/root.graphqls` | Root Query/Mutation and shared directives/scalars |
-| `schema/modules/*.graphqls` | Domain extensions (`category`, `tags`, `record`, `chat`, `user`) |
-| `directives/auth.go` | Authorization directive implementation (`@auth`) |
-| `resolver.go` | Dependency wiring from services to context GraphQL controllers |
-| `*.resolvers.go` | Thin field resolvers generated/preserved by gqlgen |
-| `server.go` | HTTP router, recovery middleware, auth middleware, transports |
-| `generated.go` | gqlgen generated execution engine (do not edit manually) |
+| `schema/root.graphqls` | root query or mutation and shared directives or scalars |
+| `schema/modules/*.graphqls` | domain extensions for `category`, `tags`, `record`, `chat`, and `user` |
+| `directives/auth.go` | authorization directive implementation |
+| `resolver.go` | dependency wiring from services to context GraphQL controllers |
+| `*.resolvers.go` | thin field resolvers generated or preserved by gqlgen |
+| `server.go` | HTTP router, recovery middleware, auth middleware, and transports |
+| `generated.go` | gqlgen generated execution engine; do not edit manually |
 | `model/models_gen.go` | gqlgen generated GraphQL transport models |
-| `gqlgen.yml` | gqlgen configuration (schema, resolver/model outputs) |
+| `gqlgen.yml` | gqlgen configuration |
 
 ## GraphQL Runtime Flow
 
-1. HTTP request enters GraphQL handler (`server.go`).
+1. HTTP request enters the GraphQL handler.
 2. Recovery middleware wraps request execution.
-3. Auth middleware populates request context (when auth service is configured).
-4. gqlgen executes operation and runs directives (e.g., `@auth`).
-5. Resolver reads context values (e.g., `ctxkeys.UserID`) and delegates to context controller.
-6. Controller maps GraphQL DTOs to usecase calls and returns response data/errors.
+3. Auth middleware populates request context when auth service is configured.
+4. gqlgen executes the operation and runs directives.
+5. Resolver reads context values and delegates to the context controller.
+6. Controller maps GraphQL DTOs to usecase calls and returns response data or errors.
 
 ## Directive Model
 
 | Directive | Behavior |
 | --- | --- |
-| `@auth(roles: String)` | Requires `ctxkeys.UserID`; enforces role when provided; bypasses role checks for trusted `ctxkeys.ServiceAccount=true` calls |
+| `@auth(roles: String)` | requires `ctxkeys.UserID`; enforces role when provided; bypasses role checks for trusted `ctxkeys.ServiceAccount=true` calls |
 
 ## Configured Transports
 
 | Transport | Status |
 | --- | --- |
-| `GET` | Enabled |
-| `POST` | Enabled |
-| `OPTIONS` | Enabled |
-| `MultipartForm` | Enabled |
-| `Websocket` | Enabled (`KeepAlivePingInterval: 10s`) |
+| `GET` | enabled |
+| `POST` | enabled |
+| `OPTIONS` | enabled |
+| `MultipartForm` | enabled |
+| `Websocket` | enabled (`KeepAlivePingInterval: 10s`) |
 
-## Design Notes
+## Boundary Rules
 
-- Resolvers must remain thin and should not host domain business logic.
-- Context-specific mapping/orchestration belongs to `internal/<ctx>/adapter/primary/graphql/controller`.
-- Generated files (`generated.go`, `model/models_gen.go`) should be managed by codegen only.
-- Module-based schema (`schema/modules`) keeps domain contracts isolated while exposing a single endpoint.
+- resolvers must remain thin and should not host domain business logic
+- context-specific mapping or orchestration belongs to `internal/<ctx>/adapter/primary/graphql/controller`
+- generated files should be managed by codegen only
+- module-based schema composition keeps domain contracts isolated while exposing a single endpoint
 
-## Package Improvements
+## Validate
 
-- Add resolver tests for parsing/validation edges (e.g., invalid ID conversion in string-to-uint resolvers).
-- Consider replacing repeated `ctx.Value(ctxkeys.UserID)` extraction with a shared helper to reduce duplication.
-- Review S2S role bypass in `@auth` and document explicit security constraints for trusted callers.
-- Add a short “schema change workflow” section (edit module -> run `make graphql` -> validate resolvers) in this README.
+```bash
+go test ./internal/adapter/primary/graphql/...
+make graphql
+make graphql.validate
+```
+
+## Risks And Compatibility Notes
+
+- schema, resolvers, and shared contract docs must move together; drift here is a public contract regression
+- trusted service-account bypass in `@auth` is a security-sensitive rule and should stay explicit
 
 ---
 

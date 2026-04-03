@@ -53,6 +53,7 @@ nav:
       - API Collections: collections/README.md
   - Platform & Ops:
       - Observability Quickstart: observability-quickstart.md
+      - Performance Readiness: performance-readiness.md
       - Ollama GPU (Optional): ollama-gpu.md
   - Reference:
       - Diagrams: diagram/README.md

@@ -14,12 +14,11 @@ This entrypoint exists so publication cadence and failure handling can evolve in
 4. `bootstrap_runtime.go` starts the app, waits for process shutdown signals, and stops it gracefully.
 5. `fxapp.OutboxPublisherModule` wires the repository, Kafka publisher, and periodic `PublishPending` loop.
 
-## Boundaries
+## Boundary Rules
 
 - no HTTP, GraphQL, or route registration belongs here
 - business contexts decide when to enqueue events; this process only publishes pending rows
 - durable configuration still comes from `internal/platform/config`
-- the root Docker image builds this binary, but the default container entrypoint remains `aion-api`
 
 ## Validate
 
@@ -28,3 +27,7 @@ go run ./cmd/outbox-publisher
 make dev
 make logs-api-publisher
 ```
+
+## Risks And Compatibility Notes
+
+- outbox worker behavior is operationally separate from the API process, so startup success of one does not prove health of the other

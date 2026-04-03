@@ -4,8 +4,18 @@
 
 GO_CACHE := $(CURDIR)/.cache/go-build
 MCP_SMOKE_USER_ID ?= 999
+LOAD_TEST_REQUESTS ?= 60
+LOAD_TEST_CONCURRENCY ?= 6
+LOAD_TEST_WARMUP ?= 5
+LOAD_TEST_TIMEOUT ?= 5s
+LOAD_TEST_RECORD_LIMIT ?= 20
+LOAD_TEST_DASHBOARD_TIMEZONE ?= UTC
+LOAD_TEST_REALTIME_REQUESTS ?= 20
+LOAD_TEST_REALTIME_CONCURRENCY ?= 4
+LOAD_TEST_REALTIME_WARMUP ?= 2
+LOAD_TEST_REALTIME_TIMEOUT ?= 30s
 
-.PHONY: test test-cover test-cover-detail test-html-report test-ci test-clean test-checks mcp-smoke mcp-smoke-readonly record-projection-smoke realtime-record-smoke record-projection-page-smoke ingest-event-smoke outbox-diagnose event-backbone-gate event-backbone-gate-preflight
+.PHONY: test test-cover test-cover-detail test-html-report test-ci test-clean test-checks mcp-smoke mcp-smoke-readonly record-projection-smoke realtime-record-smoke record-projection-page-smoke ingest-event-smoke outbox-diagnose event-backbone-gate event-backbone-gate-preflight load-test load-test-auth-login load-test-record-projections load-test-dashboard-snapshot load-test-realtime-record-created load-test-baseline
 
 # Execute unit tests
 test:
@@ -106,31 +116,31 @@ test-clean:
 
 mcp-smoke:
 	@echo "Running MCP smoke test via aion-chat..."
-	@if docker ps --filter "name=aion-chat-dev" --filter "status=running" -q | grep -q .; then \
-		if docker exec aion-chat-dev test -f /app/scripts/mcp_smoke_test.py >/dev/null 2>&1; then \
-			docker exec aion-chat-dev python /app/scripts/mcp_smoke_test.py --user-id $(MCP_SMOKE_USER_ID); \
+	@if docker ps --filter "name=aion-dev-chat" --filter "status=running" -q | grep -q .; then \
+		if docker exec aion-dev-chat test -f /app/scripts/mcp_smoke_test.py >/dev/null 2>&1; then \
+			docker exec aion-dev-chat python /app/scripts/mcp_smoke_test.py --user-id $(MCP_SMOKE_USER_ID); \
 		else \
-			echo "⚠️  MCP smoke script not found inside aion-chat-dev."; \
+			echo "⚠️  MCP smoke script not found inside aion-dev-chat."; \
 			echo "   Falling back to host repo execution."; \
 			cd ../aion-chat && AION_API_GRAPHQL_URL=http://localhost:5001/aion/api/v1/graphql .venv/bin/python scripts/mcp_smoke_test.py --user-id $(MCP_SMOKE_USER_ID) --env-file infrastructure/docker/environments/dev/.env.dev; \
 		fi; \
 	else \
-		echo "⚠️  aion-chat-dev is not running. Falling back to host repo execution."; \
+		echo "⚠️  aion-dev-chat is not running. Falling back to host repo execution."; \
 		cd ../aion-chat && AION_API_GRAPHQL_URL=http://localhost:5001/aion/api/v1/graphql .venv/bin/python scripts/mcp_smoke_test.py --user-id $(MCP_SMOKE_USER_ID) --env-file infrastructure/docker/environments/dev/.env.dev; \
 	fi
 
 mcp-smoke-readonly:
 	@echo "Running MCP smoke test (read-only) via aion-chat..."
-	@if docker ps --filter "name=aion-chat-dev" --filter "status=running" -q | grep -q .; then \
-		if docker exec aion-chat-dev test -f /app/scripts/mcp_smoke_test.py >/dev/null 2>&1; then \
-			docker exec aion-chat-dev python /app/scripts/mcp_smoke_test.py --read-only --user-id $(MCP_SMOKE_USER_ID); \
+	@if docker ps --filter "name=aion-dev-chat" --filter "status=running" -q | grep -q .; then \
+		if docker exec aion-dev-chat test -f /app/scripts/mcp_smoke_test.py >/dev/null 2>&1; then \
+			docker exec aion-dev-chat python /app/scripts/mcp_smoke_test.py --read-only --user-id $(MCP_SMOKE_USER_ID); \
 		else \
-			echo "⚠️  MCP smoke script not found inside aion-chat-dev."; \
+			echo "⚠️  MCP smoke script not found inside aion-dev-chat."; \
 			echo "   Falling back to host repo execution."; \
 			cd ../aion-chat && AION_API_GRAPHQL_URL=http://localhost:5001/aion/api/v1/graphql .venv/bin/python scripts/mcp_smoke_test.py --read-only --user-id $(MCP_SMOKE_USER_ID) --env-file infrastructure/docker/environments/dev/.env.dev; \
 		fi; \
 	else \
-		echo "⚠️  aion-chat-dev is not running. Falling back to host repo execution."; \
+		echo "⚠️  aion-dev-chat is not running. Falling back to host repo execution."; \
 		cd ../aion-chat && AION_API_GRAPHQL_URL=http://localhost:5001/aion/api/v1/graphql .venv/bin/python scripts/mcp_smoke_test.py --read-only --user-id $(MCP_SMOKE_USER_ID) --env-file infrastructure/docker/environments/dev/.env.dev; \
 	fi
 
@@ -158,6 +168,58 @@ outbox-diagnose:
 	@echo "Running outbox diagnose tool..."
 	@mkdir -p $(GO_CACHE)
 	GOCACHE=$(GO_CACHE) go run ./hack/tools/outbox-diagnose
+
+load-test:
+	@$(MAKE) load-test-baseline
+
+load-test-auth-login:
+	@echo "Running versioned load test: auth-login..."
+	@mkdir -p $(GO_CACHE)
+	GOCACHE=$(GO_CACHE) go run ./hack/tools/load-test \
+		--scenario auth-login \
+		--requests $(LOAD_TEST_REQUESTS) \
+		--concurrency $(LOAD_TEST_CONCURRENCY) \
+		--warmup $(LOAD_TEST_WARMUP) \
+		--timeout $(LOAD_TEST_TIMEOUT)
+
+load-test-record-projections:
+	@echo "Running versioned load test: record-projections-latest..."
+	@mkdir -p $(GO_CACHE)
+	GOCACHE=$(GO_CACHE) go run ./hack/tools/load-test \
+		--scenario record-projections-latest \
+		--requests $(LOAD_TEST_REQUESTS) \
+		--concurrency $(LOAD_TEST_CONCURRENCY) \
+		--warmup $(LOAD_TEST_WARMUP) \
+		--timeout $(LOAD_TEST_TIMEOUT) \
+		--record-limit $(LOAD_TEST_RECORD_LIMIT)
+
+load-test-dashboard-snapshot:
+	@echo "Running versioned load test: dashboard-snapshot..."
+	@mkdir -p $(GO_CACHE)
+	GOCACHE=$(GO_CACHE) go run ./hack/tools/load-test \
+		--scenario dashboard-snapshot \
+		--requests $(LOAD_TEST_REQUESTS) \
+		--concurrency $(LOAD_TEST_CONCURRENCY) \
+		--warmup $(LOAD_TEST_WARMUP) \
+		--timeout $(LOAD_TEST_TIMEOUT) \
+		--dashboard-timezone $(LOAD_TEST_DASHBOARD_TIMEZONE)
+
+load-test-realtime-record-created:
+	@echo "Running versioned load test: realtime-record-created..."
+	@mkdir -p $(GO_CACHE)
+	GOCACHE=$(GO_CACHE) go run ./hack/tools/load-test \
+		--scenario realtime-record-created \
+		--requests $(LOAD_TEST_REALTIME_REQUESTS) \
+		--concurrency $(LOAD_TEST_REALTIME_CONCURRENCY) \
+		--warmup $(LOAD_TEST_REALTIME_WARMUP) \
+		--timeout $(LOAD_TEST_REALTIME_TIMEOUT)
+
+load-test-baseline:
+	@echo "Running versioned local load baseline..."
+	@$(MAKE) load-test-auth-login LOAD_TEST_REQUESTS=60 LOAD_TEST_CONCURRENCY=6 LOAD_TEST_WARMUP=5 LOAD_TEST_TIMEOUT=5s
+	@$(MAKE) load-test-record-projections LOAD_TEST_REQUESTS=80 LOAD_TEST_CONCURRENCY=8 LOAD_TEST_WARMUP=5 LOAD_TEST_RECORD_LIMIT=20 LOAD_TEST_TIMEOUT=5s
+	@$(MAKE) load-test-dashboard-snapshot LOAD_TEST_REQUESTS=80 LOAD_TEST_CONCURRENCY=8 LOAD_TEST_WARMUP=5 LOAD_TEST_DASHBOARD_TIMEZONE=UTC LOAD_TEST_TIMEOUT=5s
+	@$(MAKE) load-test-realtime-record-created LOAD_TEST_REALTIME_REQUESTS=20 LOAD_TEST_REALTIME_CONCURRENCY=4 LOAD_TEST_REALTIME_WARMUP=2 LOAD_TEST_REALTIME_TIMEOUT=30s
 
 event-backbone-gate-preflight:
 	@echo "Running event backbone gate preflight..."

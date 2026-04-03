@@ -4,30 +4,30 @@
 
 ## Purpose
 
-`infrastructure/db` owns the Postgres lifecycle for `aion-api`.
-It splits durable schema evolution from local and QA seed data.
+This folder owns versioned schema changes and deterministic local data bootstrap assets.
 
 ## Current Areas
 
 | Area | Responsibility |
 | --- | --- |
-| `migrations/` | ordered schema evolution for auth, records, dashboard, audit, and event-outbox tables |
-| `seed/` | direct-SQL bootstrap data for local development and deterministic test baselines |
+| `migrations/` | schema evolution and rollback-safe SQL |
+| `seed/` | disposable local or QA data sets and helper seed assets |
 
-## Operational Use
+## Boundary Rules
+
+- migrations own schema shape; seeds must not quietly compensate for missing schema work
+- SQL here is operational code and should stay reviewable and deterministic
+
+## Validate
 
 ```bash
-make migrate-dev-up
-make migrate-dev-status
-make db-full
-make seed-test
+make migrate-up
+make seed-all
 ```
 
-## Boundaries
+## Risks And Compatibility Notes
 
-- schema changes must land as migrations, not ad-hoc SQL edits
-- seed data may assume a dev/test environment, but it must not redefine schema ownership
-- API-based seed callers live under `hack/tools`; this folder owns the direct SQL side of local data provisioning
+- drift between migrations and seeds creates false confidence in local setups
 
 ---
 

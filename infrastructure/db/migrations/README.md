@@ -4,32 +4,30 @@
 
 ## Purpose
 
-This folder is the canonical schema history for `aion-api`, managed through `golang-migrate`.
-Each migration pair must preserve the ordered evolution of the live database contract.
+This folder stores versioned SQL migrations that define schema evolution for `aion-api`.
 
 ## Current Shape
 
-| Artifact | Responsibility |
-| --- | --- |
-| `000001` - `000019` | current ordered migration chain |
-| `*.up.sql` | forward schema changes |
-| `*.down.sql` | rollback path for the matching migration |
+- one migration pair per change set
+- forward and rollback SQL kept explicit
+- migration order encoded in file naming
 
-## Common Commands
+## Validate
 
 ```bash
-make migrate-dev-up
-make migrate-dev-down
-make migrate-dev-status
-make migrate-dev-reset
-make migrate-new
+make migrate-up
+make migrate-down
+make verify
 ```
 
-## Boundaries
+## Boundary Rules
 
-- never rewrite an already-applied migration in shared environments
-- keep forward and rollback files paired
-- application code and seed scripts must adapt to the migration chain, not bypass it
+- migrations own schema history and must stay reversible when the change shape allows it
+- seeds and application code should not be used to compensate for broken or incomplete migrations
+
+## Risks And Compatibility Notes
+
+- irreversible or partially reversible migrations require stronger review because they outlive the code that introduced them
 
 ---
 

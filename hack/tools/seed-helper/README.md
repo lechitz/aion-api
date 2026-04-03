@@ -2,55 +2,23 @@
 
 **Path:** `hack/tools/seed-helper`
 
-## Overview
+## Purpose
 
-This CLI generates local seed artifacts such as JWT tokens and bcrypt hashes.
-It supports seed bootstrap flows used by Make targets and SQL seed scripts.
-
-## Package Scope
-
-| Area | Responsibility |
-| --- | --- |
-| Seed env generation | Create local `.env` seed values |
-| Token generation | Build JWT tokens for test users |
-| Password hash generation | Produce bcrypt hashes compatible with runtime auth |
+This tool supports local seed and setup workflows for `aion-api`.
 
 ## Main Commands
 
-| Command | Purpose |
-| --- | --- |
-| `generate-env` | Creates local seed env file (`infrastructure/db/seed/.env.local`) |
-| `generate-token` | Generates JWT for a user ID |
-| `generate-bcrypt` | Generates bcrypt hash for a plain password |
+- use the matching Make target when available
+- use direct `go run` only when validating the tool itself or debugging its behavior
 
-## Quick Run
+## Boundary Rules
+
+- this tool supports seed workflows; it does not own canonical seed data or schema shape
+- SQL seeds stay under `infrastructure/db/seed`
+
+## Validate
 
 ```bash
 make seed-helper
-./bin/seed-helper generate-env 10
+go test ./hack/tools/seed-helper/...
 ```
-
-## Integration Points
-
-- Used by Make targets (`seed-helper`, `seed-setup`, `seed-quick`).
-- Values feed SQL seed scripts under `infrastructure/db/seed/`.
-
-## Design Notes
-
-- Keeps crypto/token generation aligned with backend libraries.
-- Avoid committing generated artifacts or sensitive values.
-- Keep this package strictly local-dev oriented.
-
-## Package Improvements
-
-- Add tests for command parsing and invalid argument handling.
-- Add explicit output format docs for each command.
-- Support writing to custom output path for CI/local sandbox runs.
-- Add optional JSON output mode for automation scripts.
-
----
-
-<!-- doc-nav:start -->
-## Navigation
-- [Back to root README](../../../README.md)
-<!-- doc-nav:end -->

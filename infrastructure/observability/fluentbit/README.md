@@ -4,20 +4,24 @@
 
 ## Purpose
 
-This package collects container logs from the Docker host and forwards them to Loki.
+This folder stores log collection and forwarding config for the local observability stack.
 
 ## Current Flow
 
-| File | Responsibility |
-| --- | --- |
-| `fluent-bit.conf` | tail Docker JSON logs, add `APP_ENV`, ship to Loki |
-| `parsers.conf` | Docker log parsing rules |
+- tail container or runtime logs
+- normalize and label records
+- forward them to the configured log backend
 
-## Boundaries
+## Validate
 
-- labels and fields added here must stay compatible with Grafana and Loki queries
-- this package owns log collection and forwarding only; retention and query behavior live in Loki
-- keep secrets and per-machine overrides out of the checked-in config
+- start the local stack
+- produce application logs
+- confirm they appear downstream with the expected labels
+
+## Boundary Rules
+
+- keep log parsing and forwarding rules here, not in app code
+- if log labels change, update downstream queries and dashboards in the same PR
 
 ---
 

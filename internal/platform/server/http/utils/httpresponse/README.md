@@ -2,7 +2,7 @@
 
 **Path:** `internal/platform/server/http/utils/httpresponse`
 
-## Overview
+## Purpose
 
 This package standardizes HTTP JSON responses across handlers, including success envelopes, error envelopes, and span-aware error helpers.
 It is the response boundary for HTTP adapters and relies on semantic errors from `sharederrors`.
@@ -11,28 +11,10 @@ It is the response boundary for HTTP adapters and relies on semantic errors from
 
 | Area | Responsibility |
 | --- | --- |
-| JSON writing | Encode payloads and set HTTP headers consistently |
-| Success responses | Build normalized success envelope (`ResponseBody`) |
-| Error responses | Map semantic errors to status and write normalized error envelope |
-| Span-aware helpers | Record OTel span status/attributes before returning HTTP errors |
-
-## Files
-
-| File | Purpose |
-| --- | --- |
-| `httpresponse.go` | Response envelope, writers, and span-aware helpers |
-| `httpresponse_test.go` | Table-driven tests for response/status/headers and tracing behavior |
-
-## Response Envelope
-
-| Field | Type | Description |
-| --- | --- | --- |
-| `date` | `time.Time` | UTC timestamp for response generation |
-| `result` | `any` | Success payload |
-| `message` | `string` | Optional success message |
-| `error` | `string` | Client-facing error message |
-| `details` | `string` | Reserved field; omitted by default to avoid leaking internal error details |
-| `code` | `int` | HTTP status code |
+| JSON writing | encode payloads and set HTTP headers consistently |
+| Success responses | build normalized success envelopes |
+| Error responses | map semantic errors to status and write normalized error envelopes |
+| Span-aware helpers | record OTel span status and attributes before returning HTTP errors |
 
 ## Public API Reference
 
@@ -40,63 +22,54 @@ It is the response boundary for HTTP adapters and relies on semantic errors from
 
 | Function | Behavior |
 | --- | --- |
-| `WriteJSON(w, status, payload, headers...)` | Writes raw JSON payload; skips body for `204 No Content` |
-| `WriteSuccess(w, status, result, message, headers...)` | Writes standardized success envelope |
-| `WriteError(w, err, message, log, headers...)` | Maps error status, logs (`Errorw`), writes standardized error envelope |
-| `WriteDecodeError(w, err, log, headers...)` | Shortcut for malformed body (`Invalid request body`) |
-| `WriteAuthError(w, err, log, headers...)` | Shortcut for auth failures (`Unauthorized`) |
-| `WriteNoContent(w, headers...)` | Writes `204` with optional headers |
+| `WriteJSON(w, status, payload, headers...)` | writes raw JSON payload and skips body for `204 No Content` |
+| `WriteSuccess(w, status, result, message, headers...)` | writes a standardized success envelope |
+| `WriteError(w, err, message, log, headers...)` | maps error status, logs, and writes a standardized error envelope |
+| `WriteDecodeError(w, err, log, headers...)` | shortcut for malformed body responses |
+| `WriteAuthError(w, err, log, headers...)` | shortcut for auth failures |
+| `WriteNoContent(w, headers...)` | writes `204` with optional headers |
 
 ### Span-aware Writers
 
 | Function | Trace behavior |
 | --- | --- |
-| `WriteAuthErrorSpan(...)` | Records error, sets span status error, sets `http.status_code`, then writes auth error |
-| `WriteDecodeErrorSpan(...)` | Records decode error and returns `400` response |
-| `WriteValidationErrorSpan(...)` | Records validation error and returns a validation-facing error response |
-| `WriteDomainErrorSpan(...)` | Records domain error and maps status via `sharederrors.MapErrorToHTTPStatus` |
+| `WriteAuthErrorSpan(...)` | records the error, sets span status, writes auth error |
+| `WriteDecodeErrorSpan(...)` | records decode error and returns `400` |
+| `WriteValidationErrorSpan(...)` | records validation error and returns a validation-facing response |
+| `WriteDomainErrorSpan(...)` | records domain error and maps status via `sharederrors.MapErrorToHTTPStatus` |
 
 ## Status Mapping Behavior
 
-`WriteError` and domain span helpers delegate status mapping to:
-
-- `sharederrors.MapErrorToHTTPStatus(err)`
-
+`WriteError` and domain span helpers delegate status mapping to `sharederrors.MapErrorToHTTPStatus(err)`.
 This keeps status semantics centralized and consistent across all HTTP adapters.
 
 ## Tested Behaviors
 
 | Behavior | Verified by |
 | --- | --- |
-| `204` responses do not write body/content-type | `TestWriteJSON`, `TestWriteNoContent` |
-| Success envelope has expected code/message/result/date | `TestWriteSuccess` |
-| Error envelope contains `error` and mapped status without raw internal details | `TestWriteError`, `TestWriteAuthAndDecodeError` |
+| `204` responses do not write body or content-type | `TestWriteJSON`, `TestWriteNoContent` |
+| Success envelopes keep code, message, result, and date | `TestWriteSuccess` |
+| Error envelopes keep mapped status without leaking raw internals | `TestWriteError`, `TestWriteAuthAndDecodeError` |
 | Custom response headers are preserved | `TestWriteError_WithCustomHeaders` |
-| Span helpers set `codes.Error` and `tracingkeys.HTTPStatusCodeKey` | `TestSpanErrorResponses` |
+| Span helpers set `codes.Error` and HTTP status attributes | `TestSpanErrorResponses` |
 
-## Usage Example
+## Boundary Rules
 
-```go
-if err != nil {
-    httpresponse.WriteError(w, err, "failed to create resource", log)
-    return
-}
+- keep handlers thin by delegating response shape and status mapping to this package
+- keep transport concerns here; domain usecases should not depend on this package
+- use `Write*Span` helpers at adapter boundaries where tracing is active
 
-httpresponse.WriteSuccess(w, http.StatusCreated, result, "resource created")
+## Validate
+
+```bash
+go test ./internal/platform/server/http/utils/httpresponse/...
+go test ./internal/platform/server/http/utils/sharederrors/...
 ```
 
-## Design Notes
+## Risks And Compatibility Notes
 
-- Keep handlers thin by delegating response shape and status mapping to this package.
-- Keep transport concerns here; domain usecases should not depend on this package.
-- Use `Write*Span` helpers at adapter boundaries where tracing is active.
-
-## Package Improvements
-
-- Keep `details` omitted by default unless a future internal-only contract explicitly needs it.
-- Consider adding a helper for `202 Accepted` async flows to keep envelope semantics explicit.
-- Add explicit tests for `WriteSuccess`/`WriteError` with multiple header maps to validate merge precedence.
-- Consider documenting a strict policy for client-facing `message` vs internal `details` to improve consistency.
+- response envelopes are shared HTTP contracts, so changes here ripple across many handlers at once
+- `details` stays omitted by default to avoid leaking internal error data; relaxing that rule should be treated as a compatibility and security decision
 
 ---
 

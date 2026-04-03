@@ -2,47 +2,88 @@
 
 **Path:** `internal/record`
 
-## Overview
+## Purpose
 
-Record domain for user event/diary entries.
-Handles record lifecycle and query flows with strict user-scoped validation.
+`internal/record` owns user-scoped record lifecycle, derived read models, dashboard semantics, and the v1 insight and analytics layer built on top of record truth.
 
-## Typical Responsibilities
+## Current Responsibilities
 
 | Area | Responsibility |
 | --- | --- |
-| Record lifecycle | Create/read/update/soft-delete records |
-| Query operations | Date/tag/category/user-based retrieval |
-| Domain validation | Ensure required relationships and field constraints |
-| Dashboard semantics | Metric definitions, goal templates, and white-label layout (views/widgets) |
-| Analytics and insights | Deterministic v1 insight generation and backend-owned analytics series |
+| Record lifecycle | create, read, update, and soft-delete records |
+| Query surfaces | date, tag, category, user, and search-driven retrieval |
+| Derived models | record projection and graph projection shaping |
+| Dashboard semantics | metric definitions, goal templates, widget catalog rules, and dashboard snapshot assembly |
+| Intelligence | deterministic `insightFeed` and narrow `analyticsSeries` aggregation |
 
-## Design Notes
+## Current Shape
 
-- Keep record invariants in core usecases.
-- Keep adapters mapping-only.
-- Keep persistence concerns in secondary adapters.
-- Dashboard white-label layout rules are enforced in usecase layer (including large-card limits).
-- Widget layout remains a two-tier v1 contract:
-  - `aion-api` owns widget types, coarse sizes, view persistence, ordering, and large-card limits
-  - `aion-web` owns the richer visual grammar stored in `configJson`, including grid dimensions and free placement coordinates
-- `dashboardSnapshot` now carries an explicit checklist-oriented payload for
-  count-based checklist widgets, so the dashboard no longer has to infer
-  checklist semantics only from generic progress fields.
-- Insight generation and analytics aggregation for v1 belong here, not in dashboard local state.
-- Graph projection contracts for optional export/lab workflows belong here too, but they stay derived and non-authoritative.
-- Scope semantics should stay consistent across GraphQL surfaces:
+| Area | Responsibility |
+| --- | --- |
+| `core/domain` | canonical record, projection, dashboard, and filter models |
+| `core/usecase` | lifecycle orchestration, projection reads, dashboard semantics, insights, and analytics |
+| `adapter/primary/graphql` | GraphQL transport mapping for record-facing contracts |
+| `adapter/secondary/db` | authoritative persistence and derived read-model queries |
+| `adapter/secondary/cache` | cache boundary for hot record reads |
+
+## Boundary Rules
+
+- record lifecycle ownership stays here even when category, tag, dashboard, or chat flows consume derived record semantics
+- dashboard and insight meaning for v1 is backend-owned here, not invented downstream by UI state
+- graph projections and dashboard projections are derived surfaces; they must not redefine the authoritative record model
+- transport adapters must keep mapping, pagination, and filter decoding thin; lifecycle and scope semantics belong in core usecases
+
+## Validation
+
+```bash
+go test ./internal/record/...
+go test ./internal/adapter/primary/graphql/...
+make graphql.validate
+make verify
+```
+
+## Performance Readiness
+
+This context is one of the main candidates for future real benchmarks, but today the reliable checks are boundary-level:
+
+```bash
+make record-projection-smoke
+make record-projection-page-smoke
+make realtime-record-smoke
+make load-test-record-projections
+make load-test-dashboard-snapshot
+```
+
+Observe:
+
+- projection materialization health
+- pagination stability on derived reads
+- dashboard and analytics query latency in Grafana
+- whether outbox or realtime issues are inflating perceived record latency
+- whether `recordProjectionsLatest` stays inside the committed local load thresholds
+- whether `dashboardSnapshot` stays inside the committed local load thresholds
+
+Do not document per-function numbers here until the repo has committed benchmarks for record-heavy hot paths.
+
+## Risks And Compatibility Notes
+
+- widget layout remains a two-tier v1 contract:
+  - `aion-api` owns widget types, coarse sizes, persisted ordering, and large-card limits
+  - `aion-web` owns the richer visual grammar stored in `configJson`
+- `dashboardSnapshot` checklist payloads and `analyticsSeries` semantics are consumer-visible contracts and should evolve additively
+- scope semantics must remain aligned across read surfaces:
   - `window`
   - optional `date`
   - optional `timezone`
   - optional `categoryId`
   - optional `tagIds`
+- graph projection exports are useful diagnostics, but they are not the authority over record truth
 
-## Package Improvements
+## Related Docs
 
-- Add query operation matrix with expected filters/pagination behavior.
-- Add relation consistency checks for category/tag references.
-- Add explicit notes for soft-delete semantics and recovery expectations.
+- [`../category/README.md`](../category/README.md)
+- [`../tag/README.md`](../tag/README.md)
+- [`../../contracts/graphql/README.md`](../../contracts/graphql/README.md)
 
 ---
 

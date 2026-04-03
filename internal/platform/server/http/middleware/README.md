@@ -10,10 +10,10 @@ This package owns cross-cutting HTTP middleware applied before bounded-context h
 
 | Middleware | Current scope | What it does |
 | --- | --- | --- |
-| `requestid.New()` | global router and health endpoints | normalizes or generates `X-Request-ID`, stores it in context, echoes it in the response |
-| `recovery.New(genericHandler)` | global router only | catches panics and delegates sanitized response handling to the generic handler |
-| `cors.New()` | global router and health endpoints | applies the current browser-origin and credential policy |
-| `servicetoken.New(cfg, log)` | GraphQL mount only | validates trusted S2S headers and optionally injects service-account user context |
+| `requestid.New()` | global router and health endpoints | normalize or generate `X-Request-ID`, store it in context, echo it in the response |
+| `recovery.New(genericHandler)` | global router only | catch panics and delegate sanitized response handling to the generic handler |
+| `cors.New()` | global router and health endpoints | apply the current browser-origin and credential policy |
+| `servicetoken.New(cfg, log)` | GraphQL mount only | validate trusted S2S headers and optionally inject service-account user context |
 
 ## Effective Order In `composer.go`
 
@@ -22,20 +22,25 @@ This package owns cross-cutting HTTP middleware applied before bounded-context h
 3. `cors.New()`
 4. `servicetoken.New(cfg, log)` only around the GraphQL mount
 
-This order is the current truth and takes precedence over any older “recommended ordering” text elsewhere.
+This order is the current truth and takes precedence over older recommendations elsewhere.
 
-## Current Policy Notes
+## Boundary Rules
 
-- CORS currently allows `http://localhost:5000` and `http://localhost:5173`, with credentials enabled.
-- Request IDs must be UUIDs; invalid or oversized values are replaced.
-- Health routes intentionally skip the global recovery and `otelhttp` wrappers.
-- `servicetoken` is permissive when no service key header is present and becomes authoritative only when S2S headers are supplied.
+- this README owns `cors`, `recovery`, and `requestid` behavior
+- those leaf READMEs are intentionally removed to reduce drift
+- `servicetoken` keeps its own README because it is a distinct trust boundary
 
-## Boundary Rule
+## Validate
 
-- This README is the current owner for `cors`, `recovery`, and `requestid` behavior.
-- Those leaf READMEs are intentionally removed to reduce drift.
-- `servicetoken` keeps its own README because it is a distinct trust boundary.
+```bash
+go test ./internal/platform/server/http/middleware/...
+go test ./internal/platform/server/http/...
+```
+
+## Risks And Compatibility Notes
+
+- health routes intentionally skip the global recovery and `otelhttp` wrappers, so middleware ordering changes can alter diagnostics behavior
+- request-id and CORS behavior are transport contracts that affect every HTTP consumer
 
 ---
 

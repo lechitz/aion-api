@@ -2,7 +2,7 @@
 
 **Path:** `internal/platform/server/http/utils/sharederrors`
 
-## Overview
+## Purpose
 
 This package centralizes HTTP-facing semantic errors and status-code mapping for handlers and adapter boundaries.
 It keeps transport error behavior consistent without leaking infrastructure details.
@@ -11,32 +11,25 @@ It keeps transport error behavior consistent without leaking infrastructure deta
 
 | Area | Responsibility |
 | --- | --- |
-| Typed errors | Define explicit error types (`ValidationError`, `UnauthorizedError`, etc.) |
-| Sentinel errors | Provide reusable `errors.Is` targets for common conflicts/validation failures |
-| Status mapping | Convert known errors to stable HTTP status codes |
-| Message constants | Keep shared error messages consistent and reusable |
-
-## Files
-
-| File | Purpose |
-| --- | --- |
-| `errors.go` | Error constants, custom error types, constructors, and sentinel errors |
-| `map_error_http.go` | `MapErrorToHTTPStatus(err)` translation from semantic errors to HTTP status |
+| Typed errors | define explicit error types such as `ValidationError` and `UnauthorizedError` |
+| Sentinel errors | provide reusable `errors.Is` targets for common conflicts and validation failures |
+| Status mapping | convert known errors to stable HTTP status codes |
+| Message constants | keep shared error messages consistent and reusable |
 
 ## Public API Reference
 
-### Constructors and Helpers
+### Constructors And Helpers
 
 | Function | Returns | Notes |
 | --- | --- | --- |
-| `ErrMissingUserID()` | `error` | Missing user id in context |
-| `ErrUnauthorized(reason)` | `error` | Unauthorized with optional reason |
-| `ErrForbidden(reason)` | `error` | Forbidden with optional reason |
-| `NewValidationError(field, reason)` | `error` | Validation error with field context |
-| `NewAuthenticationError(reason)` | `error` | Authentication failure, mapped as unauthorized |
-| `AtLeastOneFieldRequired(fields...)` | `error` | Validation helper for partial update commands |
-| `MissingFields(fields...)` | `error` | Validation helper for required field checks |
-| `MapErrorToHTTPStatus(err)` | `int` | Main package entrypoint used by HTTP response layer |
+| `ErrMissingUserID()` | `error` | missing user id in context |
+| `ErrUnauthorized(reason)` | `error` | unauthorized with optional reason |
+| `ErrForbidden(reason)` | `error` | forbidden with optional reason |
+| `NewValidationError(field, reason)` | `error` | validation error with field context |
+| `NewAuthenticationError(reason)` | `error` | authentication failure, mapped as unauthorized |
+| `AtLeastOneFieldRequired(fields...)` | `error` | validation helper for partial update commands |
+| `MissingFields(fields...)` | `error` | validation helper for required field checks |
+| `MapErrorToHTTPStatus(err)` | `int` | main entrypoint used by HTTP response helpers |
 
 ### Typed Errors
 
@@ -69,31 +62,37 @@ It keeps transport error behavior consistent without leaking infrastructure deta
 | `httperrors.ErrResourceNotFound` | `404` |
 | `httperrors.ErrMethodNotAllowed` | `405` |
 | Conflict errors | `409` |
-| Any unknown error | `500` |
+| Unknown errors | `500` |
 
 ## Usage Example
 
 ```go
 if err != nil {
     status := sharederrors.MapErrorToHTTPStatus(err)
-    httpresponse.WriteError(ctx, w, logger, err)
-    _ = status // status can be used for metrics/log decoration if needed
+    httpresponse.WriteError(w, err, "request failed", logger)
+    _ = status // useful for metrics or structured logs
     return
 }
 ```
 
-## Design Notes
+## Boundary Rules
 
-- Keep this package transport-semantic only (no domain orchestration).
-- Prefer `errors.As` for typed errors and `errors.Is` for sentinels.
-- Reuse constants from `internal/shared/constants/commonkeys` when composing field-based validation errors.
+- keep this package transport-semantic only; domain orchestration does not belong here
+- prefer `errors.As` for typed errors and `errors.Is` for sentinels
+- if a new semantic error changes public HTTP behavior, update response-layer tests in the same PR
 
-## Package Improvements
+## Validate
 
-- Consolidate duplicated semantics for missing user id (`ErrMissingUserID`, `ErrMissingUserIDParam`) into a single source of truth.
-- Evaluate whether `MissingFields()` should explicitly handle `len(fields) == 0` to avoid ambiguous validation messages.
-- Consider exposing a small test table in package docs to lock the expected map (`error -> status`) behavior.
-- Standardize naming between constructor-style functions (`NewValidationError`) and `Err*` helpers for API consistency.
+```bash
+go test ./internal/platform/server/http/utils/sharederrors/...
+go test ./internal/platform/server/http/utils/httpresponse/...
+```
+
+## Risks And Compatibility Notes
+
+- HTTP status mapping is shared behavior for all HTTP adapters, so small changes can create repo-wide regressions
+- prefer adding new typed or sentinel errors over broadening the meaning of existing ones
+- if a semantic error becomes part of a consumer-visible API contract, document it at the nearest boundary that emits it
 
 ---
 

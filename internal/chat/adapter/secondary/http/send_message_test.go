@@ -58,7 +58,7 @@ func newRequest() *chatdto.InternalChatRequest {
 
 func TestNewClient_PanicsWhenHTTPClientNil(t *testing.T) {
 	require.Panics(t, func() {
-		_ = chathttp.New(nil, "http://aion-chat:8000", mockChatHTTPLogger{})
+		_ = chathttp.New(nil, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 	})
 }
 
@@ -72,7 +72,7 @@ func TestSendMessage_Success(t *testing.T) {
 				Body:       io.NopCloser(strings.NewReader(`{"response":"ok","tokens_used":10}`)),
 			}, nil
 		},
-	}, "http://aion-chat:8000", mockChatHTTPLogger{})
+	}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 
 	resp, err := client.SendMessage(t.Context(), newRequest())
 	require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestSendMessage_Errors(t *testing.T) {
 			doFn: func(_ *stdhttp.Request) (*stdhttp.Response, error) {
 				return nil, errors.New("should not call")
 			},
-		}, "http://aion-chat:8000", mockChatHTTPLogger{})
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 		req := newRequest()
 		req.Context = map[string]interface{}{"bad": func() {}}
 
@@ -110,7 +110,7 @@ func TestSendMessage_Errors(t *testing.T) {
 			doFn: func(_ *stdhttp.Request) (*stdhttp.Response, error) {
 				return nil, errors.New("http down")
 			},
-		}, "http://aion-chat:8000", mockChatHTTPLogger{})
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 
 		_, err := client.SendMessage(t.Context(), newRequest())
 		require.Error(t, err)
@@ -121,7 +121,7 @@ func TestSendMessage_Errors(t *testing.T) {
 			doFn: func(_ *stdhttp.Request) (*stdhttp.Response, error) {
 				return &stdhttp.Response{StatusCode: stdhttp.StatusOK, Body: errReadCloser{}}, nil
 			},
-		}, "http://aion-chat:8000", mockChatHTTPLogger{})
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 
 		_, err := client.SendMessage(t.Context(), newRequest())
 		require.Error(t, err)
@@ -135,7 +135,7 @@ func TestSendMessage_Errors(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("upstream failed")),
 				}, nil
 			},
-		}, "http://aion-chat:8000", mockChatHTTPLogger{})
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 
 		_, err := client.SendMessage(t.Context(), newRequest())
 		require.Error(t, err)
@@ -149,7 +149,7 @@ func TestSendMessage_Errors(t *testing.T) {
 					Body:       io.NopCloser(strings.NewReader("{invalid-json")),
 				}, nil
 			},
-		}, "http://aion-chat:8000", mockChatHTTPLogger{})
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
 
 		_, err := client.SendMessage(t.Context(), newRequest())
 		require.Error(t, err)

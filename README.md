@@ -8,32 +8,33 @@ aion-api focuses on three goals:
 
 - keep business logic isolated from transport and infrastructure
 - provide stable API contracts for multiple clients
-- keep operations visible and debuggable in local and production-like environments
+- keep operations visible and debuggable in local and production-like stacks
 
 ## Quick Links
 
 - Documentation portal: [aion-api Docs](https://lechitz.github.io/aion-api/)
 - REST explorer: [Swagger UI](https://lechitz.github.io/aion-api/swagger-ui/)
+- Shared GraphQL contracts: [`contracts/graphql/README.md`](./contracts/graphql/README.md)
 - OpenAPI contract: `contracts/openapi/swagger.yaml`
 - GraphQL schema artifact: [`docs/graphql/schema.graphql`](./docs/graphql/schema.graphql)
-- GraphQL shared mutations: [`contracts/graphql/mutations/README.md`](./contracts/graphql/mutations/README.md)
 - Documentation ownership map: [`.github/DOCUMENTATION_OWNERSHIP.md`](./.github/DOCUMENTATION_OWNERSHIP.md)
 
 ## Architecture At A Glance
 
 | Layer | Purpose |
 | --- | --- |
-| `internal/<ctx>/core` | Domain, ports, and usecases (business logic) |
-| `internal/<ctx>/adapter/primary` | HTTP/GraphQL input adapters |
-| `internal/<ctx>/adapter/secondary` | DB/cache/provider output adapters |
-| `internal/platform` | App bootstrap, server, config, and observability wiring |
-| `infrastructure` | Docker, migrations, observability stack |
+| `internal/<ctx>/core` | domain, ports, and usecases |
+| `internal/<ctx>/adapter/primary` | HTTP and GraphQL input adapters |
+| `internal/<ctx>/adapter/secondary` | DB, cache, Kafka, and provider adapters |
+| `internal/platform` | bootstrap, config, server, observability, and shared runtime contracts |
+| `internal/realtime` | authenticated SSE fan-out for projection-ready updates |
+| `infrastructure` | Docker, migrations, seeds, and observability assets |
 
 ## Core Stack
 
 - Go
-- Chi (HTTP routing)
-- gqlgen (GraphQL)
+- Chi
+- gqlgen
 - PostgreSQL + GORM
 - Redis
 - OpenTelemetry + Prometheus + Grafana + Loki
@@ -63,7 +64,7 @@ Current integrated development assumes a multi-repo workspace with sibling repos
 Implications:
 
 - `make build-dev` and `make dev` are intended for this multi-repo workspace, not for an isolated clone of `aion-api`
-- the `event-backbone-gate` workflow and preflight are designed for a self-hosted runner with that workspace already available, and are intentionally manual (`workflow_dispatch`)
+- the `event-backbone-gate` workflow and preflight are designed for a self-hosted runner with that workspace already available
 - if you clone only `aion-api`, some integrated dev and runtime validation flows will not work until those sibling repos are also present
 
 ## Quality Gates
@@ -76,6 +77,28 @@ make graphql.queries graphql.manifest graphql.validate
 make verify
 ```
 
+## Performance Readiness
+
+Current state:
+
+- the repo has strong smoke and observability support, but no committed Go microbenchmarks yet
+- performance validation today is boundary-level and system-level, not synthetic per-function benchmarking
+
+Current practical checks:
+
+```bash
+make dev
+./infrastructure/observability/scripts/setup-improvements.sh
+make outbox-diagnose
+make record-projection-smoke
+make realtime-record-smoke
+make load-test-baseline
+make event-backbone-gate
+```
+
+Read the protocol in [`docs/performance-readiness.md`](./docs/performance-readiness.md) before documenting any latency or throughput claim in a boundary README.
+That guide now also records the latest validated local baseline and the integrated gate that produced it.
+
 ## GraphQL Contract Workflow
 
 ```bash
@@ -84,6 +107,20 @@ make graphql.manifest
 make graphql.validate
 make graphql.check-dirty
 ```
+
+## Documentation Model
+
+When docs overlap, use this order:
+
+1. canonical contracts and generated artifacts under `contracts/` and `docs/graphql/`
+2. the nearest boundary `README.md`
+3. this root README
+
+Practical rules:
+
+- update the nearest boundary README in the same PR when ownership, dependencies, runtime behavior, or validation changes
+- keep folder-level READMEs focused on the boundary they own; do not duplicate policy text already covered elsewhere
+- use [`.github/DOCUMENTATION_OWNERSHIP.md`](./.github/DOCUMENTATION_OWNERSHIP.md) when two docs appear to overlap
 
 ## Canonical v1 Insight Surface
 
@@ -96,7 +133,7 @@ Canonical GraphQL operations:
 
 Current contract rules:
 
-- `aion-api` is the authority for schema, resolver behavior, and shared GraphQL artifacts.
+- `aion-api` is the authority for schema, resolver behavior, and shared GraphQL artifacts
 - shared query documents under `contracts/graphql` must stay aligned with the live schema
 - consumers such as `aion-web` and `aion-chat` may adapt presentation, but must not invent richer business semantics than the backend exposes
 
@@ -138,6 +175,7 @@ Repository README map by area.
 - [`cmd/outbox-publisher/README.md`](./cmd/outbox-publisher/README.md)
 
 ### contracts
+- [`contracts/graphql/README.md`](./contracts/graphql/README.md)
 - [`contracts/graphql/mutations/README.md`](./contracts/graphql/mutations/README.md)
 - [`contracts/graphql/queries/README.md`](./contracts/graphql/queries/README.md)
 - [`contracts/openapi/README.md`](./contracts/openapi/README.md)
@@ -147,12 +185,14 @@ Repository README map by area.
 - [`docs/collections/README.md`](./docs/collections/README.md)
 - [`docs/diagram/README.md`](./docs/diagram/README.md)
 - [`docs/graphql/README.md`](./docs/graphql/README.md)
+- [`docs/performance-readiness.md`](./docs/performance-readiness.md)
 - [`docs/swagger-ui/README.md`](./docs/swagger-ui/README.md)
 
 ### hack
 - [`hack/README.md`](./hack/README.md)
 - [`hack/dev/README.md`](./hack/dev/README.md)
 - [`hack/tools/graph-projection-export/README.md`](./hack/tools/graph-projection-export/README.md)
+- [`hack/tools/load-test/README.md`](./hack/tools/load-test/README.md)
 - [`hack/tools/seed-caller/README.md`](./hack/tools/seed-caller/README.md)
 - [`hack/tools/seed-helper/README.md`](./hack/tools/seed-helper/README.md)
 
@@ -162,14 +202,14 @@ Repository README map by area.
 - [`infrastructure/db/migrations/README.md`](./infrastructure/db/migrations/README.md)
 - [`infrastructure/db/seed/README.md`](./infrastructure/db/seed/README.md)
 - [`infrastructure/docker/README.md`](./infrastructure/docker/README.md)
-- [`infrastructure/docker/environments/README.md`](./infrastructure/docker/environments/README.md)
-- [`infrastructure/docker/environments/example/README.md`](./infrastructure/docker/environments/example/README.md)
+- [`infrastructure/docker/scripts/README.md`](./infrastructure/docker/scripts/README.md)
 - [`infrastructure/observability/README.md`](./infrastructure/observability/README.md)
 - [`infrastructure/observability/fluentbit/README.md`](./infrastructure/observability/fluentbit/README.md)
 - [`infrastructure/observability/grafana/README.md`](./infrastructure/observability/grafana/README.md)
 - [`infrastructure/observability/loki/README.md`](./infrastructure/observability/loki/README.md)
 - [`infrastructure/observability/otel/README.md`](./infrastructure/observability/otel/README.md)
 - [`infrastructure/observability/prometheus/README.md`](./infrastructure/observability/prometheus/README.md)
+- [`infrastructure/observability/scripts/README.md`](./infrastructure/observability/scripts/README.md)
 
 ### internal
 - [`internal/README.md`](./internal/README.md)
@@ -200,11 +240,18 @@ Repository README map by area.
 - [`internal/platform/server/http/utils/cookies/README.md`](./internal/platform/server/http/utils/cookies/README.md)
 - [`internal/platform/server/http/utils/httpresponse/README.md`](./internal/platform/server/http/utils/httpresponse/README.md)
 - [`internal/platform/server/http/utils/sharederrors/README.md`](./internal/platform/server/http/utils/sharederrors/README.md)
+- [`internal/realtime/README.md`](./internal/realtime/README.md)
 - [`internal/record/README.md`](./internal/record/README.md)
 - [`internal/shared/README.md`](./internal/shared/README.md)
 - [`internal/shared/constants/README.md`](./internal/shared/constants/README.md)
 - [`internal/tag/README.md`](./internal/tag/README.md)
 - [`internal/user/README.md`](./internal/user/README.md)
+
+### agents
+- [`agents/personas/README.md`](./agents/personas/README.md)
+- [`agents/playbooks/README.md`](./agents/playbooks/README.md)
+- [`agents/review/README.md`](./agents/review/README.md)
+- [`agents/standards/README.md`](./agents/standards/README.md)
 
 ### makefiles
 - [`makefiles/README.md`](./makefiles/README.md)
