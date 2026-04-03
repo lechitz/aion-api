@@ -49,12 +49,26 @@ func (c *controller) CreateDashboardView(ctx context.Context, userID uint64, in 
 	return toGraphQLDashboardView(out, nil), nil
 }
 
+func (c *controller) UpdateDashboardView(ctx context.Context, userID uint64, in model.UpdateDashboardViewInput) (*model.DashboardView, error) {
+	out, err := c.RecordService.UpdateDashboardView(ctx, userID, mustParseID(in.ViewID), input.UpdateDashboardViewCommand{
+		Name: in.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLDashboardView(out, nil), nil
+}
+
 func (c *controller) SetDefaultDashboardView(ctx context.Context, userID uint64, viewID string) (*model.DashboardView, error) {
 	out, err := c.RecordService.SetDefaultDashboardView(ctx, userID, mustParseID(viewID))
 	if err != nil {
 		return nil, err
 	}
 	return toGraphQLDashboardView(out, nil), nil
+}
+
+func (c *controller) DeleteDashboardView(ctx context.Context, userID uint64, viewID string) error {
+	return c.RecordService.DeleteDashboardView(ctx, userID, mustParseID(viewID))
 }
 
 func (c *controller) UpsertDashboardWidget(ctx context.Context, userID uint64, in model.UpsertDashboardWidgetInput) (*model.DashboardWidget, error) {

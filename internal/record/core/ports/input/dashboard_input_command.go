@@ -60,6 +60,11 @@ type CreateDashboardViewCommand struct {
 	IsDefault *bool
 }
 
+// UpdateDashboardViewCommand contains input for renaming one dashboard view.
+type UpdateDashboardViewCommand struct {
+	Name string
+}
+
 // UpsertDashboardWidgetCommand contains input data to create/update dashboard widget.
 type UpsertDashboardWidgetCommand struct {
 	ID                 *uint64

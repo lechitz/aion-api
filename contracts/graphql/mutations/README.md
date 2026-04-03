@@ -19,7 +19,7 @@ Unlike ad-hoc consumer mutations, files here are backend-owned artifacts and sho
 | `categories/` | `create`, `update`, `delete` |
 | `tags/` | `create`, `update`, `delete` |
 | `records/` | `create`, `update`, `delete`, `delete-all` |
-| `dashboard/` | `create-view`, `set-default-view`, `upsert-widget`, `reorder-widgets`, `create-metric-and-widget`, `upsert-metric-definition`, `upsert-goal-template`, `delete-widget`, `delete-goal-template` |
+| `dashboard/` | `create-view`, `update-view`, `set-default-view`, `delete-view`, `upsert-widget`, `reorder-widgets`, `create-metric-and-widget`, `upsert-metric-definition`, `upsert-goal-template`, `delete-widget`, `delete-goal-template` |
 
 ## Current Contract Notes
 

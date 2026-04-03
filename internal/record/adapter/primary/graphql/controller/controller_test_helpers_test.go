@@ -40,7 +40,9 @@ type recordServiceStub struct {
 	listViewsFn             func(context.Context, uint64) ([]domain.DashboardView, error)
 	getViewFn               func(context.Context, uint64, uint64) (domain.DashboardView, error)
 	createViewFn            func(context.Context, uint64, input.CreateDashboardViewCommand) (domain.DashboardView, error)
+	updateViewFn            func(context.Context, uint64, uint64, input.UpdateDashboardViewCommand) (domain.DashboardView, error)
 	setDefaultViewFn        func(context.Context, uint64, uint64) (domain.DashboardView, error)
+	deleteViewFn            func(context.Context, uint64, uint64) error
 	upsertWidgetFn          func(context.Context, uint64, input.UpsertDashboardWidgetCommand) (domain.DashboardWidget, error)
 	reorderWidgetFn         func(context.Context, uint64, input.ReorderDashboardWidgetsCommand) ([]domain.DashboardWidget, error)
 	deleteWidgetFn          func(context.Context, uint64, uint64) error
@@ -238,11 +240,25 @@ func (s *recordServiceStub) CreateDashboardView(ctx context.Context, userID uint
 	return s.createViewFn(ctx, userID, cmd)
 }
 
+func (s *recordServiceStub) UpdateDashboardView(ctx context.Context, userID uint64, viewID uint64, cmd input.UpdateDashboardViewCommand) (domain.DashboardView, error) {
+	if s.updateViewFn == nil {
+		panic("unexpected UpdateDashboardView call")
+	}
+	return s.updateViewFn(ctx, userID, viewID, cmd)
+}
+
 func (s *recordServiceStub) SetDefaultDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error) {
 	if s.setDefaultViewFn == nil {
 		panic("unexpected SetDefaultDashboardView call")
 	}
 	return s.setDefaultViewFn(ctx, userID, viewID)
+}
+
+func (s *recordServiceStub) DeleteDashboardView(ctx context.Context, userID uint64, viewID uint64) error {
+	if s.deleteViewFn == nil {
+		panic("unexpected DeleteDashboardView call")
+	}
+	return s.deleteViewFn(ctx, userID, viewID)
 }
 
 func (s *recordServiceStub) UpsertDashboardWidget(ctx context.Context, userID uint64, cmd input.UpsertDashboardWidgetCommand) (domain.DashboardWidget, error) {

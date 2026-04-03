@@ -238,6 +238,7 @@ type ComplexityRoot struct {
 		CreateMetricAndWidget   func(childComplexity int, input model.CreateMetricAndWidgetInput) int
 		CreateRecord            func(childComplexity int, input model.CreateRecordInput) int
 		CreateTag               func(childComplexity int, input model.CreateTagInput) int
+		DeleteDashboardView     func(childComplexity int, input model.DeleteDashboardViewInput) int
 		DeleteDashboardWidget   func(childComplexity int, input model.DeleteDashboardWidgetInput) int
 		DeleteGoalTemplate      func(childComplexity int, input model.DeleteGoalTemplateInput) int
 		Empty                   func(childComplexity int) int
@@ -248,6 +249,7 @@ type ComplexityRoot struct {
 		SoftDeleteRecord        func(childComplexity int, input model.DeleteRecordInput) int
 		SoftDeleteTag           func(childComplexity int, input model.DeleteTagInput) int
 		UpdateCategory          func(childComplexity int, input model.UpdateCategoryInput) int
+		UpdateDashboardView     func(childComplexity int, input model.UpdateDashboardViewInput) int
 		UpdateRecord            func(childComplexity int, input model.UpdateRecordInput) int
 		UpdateTag               func(childComplexity int, input model.UpdateTagInput) int
 		UpsertDashboardWidget   func(childComplexity int, input model.UpsertDashboardWidgetInput) int
@@ -385,7 +387,9 @@ type MutationResolver interface {
 	UpsertGoalTemplate(ctx context.Context, input model.UpsertGoalTemplateInput) (*model.GoalTemplate, error)
 	DeleteGoalTemplate(ctx context.Context, input model.DeleteGoalTemplateInput) (bool, error)
 	CreateDashboardView(ctx context.Context, input model.CreateDashboardViewInput) (*model.DashboardView, error)
+	UpdateDashboardView(ctx context.Context, input model.UpdateDashboardViewInput) (*model.DashboardView, error)
 	SetDefaultDashboardView(ctx context.Context, input model.SetDefaultDashboardViewInput) (*model.DashboardView, error)
+	DeleteDashboardView(ctx context.Context, input model.DeleteDashboardViewInput) (bool, error)
 	UpsertDashboardWidget(ctx context.Context, input model.UpsertDashboardWidgetInput) (*model.DashboardWidget, error)
 	ReorderDashboardWidgets(ctx context.Context, input model.ReorderDashboardWidgetsInput) ([]*model.DashboardWidget, error)
 	DeleteDashboardWidget(ctx context.Context, input model.DeleteDashboardWidgetInput) (bool, error)
@@ -1237,6 +1241,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.CreateTag(childComplexity, args["input"].(model.CreateTagInput)), true
+	case "Mutation.deleteDashboardView":
+		if e.complexity.Mutation.DeleteDashboardView == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteDashboardView_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteDashboardView(childComplexity, args["input"].(model.DeleteDashboardViewInput)), true
 	case "Mutation.deleteDashboardWidget":
 		if e.complexity.Mutation.DeleteDashboardWidget == nil {
 			break
@@ -1337,6 +1352,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateCategory(childComplexity, args["input"].(model.UpdateCategoryInput)), true
+	case "Mutation.updateDashboardView":
+		if e.complexity.Mutation.UpdateDashboardView == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDashboardView_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateDashboardView(childComplexity, args["input"].(model.UpdateDashboardViewInput)), true
 	case "Mutation.updateRecord":
 		if e.complexity.Mutation.UpdateRecord == nil {
 			break
@@ -2109,6 +2135,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateRecordInput,
 		ec.unmarshalInputCreateTagInput,
 		ec.unmarshalInputDeleteCategoryInput,
+		ec.unmarshalInputDeleteDashboardViewInput,
 		ec.unmarshalInputDeleteDashboardWidgetInput,
 		ec.unmarshalInputDeleteGoalTemplateInput,
 		ec.unmarshalInputDeleteRecordInput,
@@ -2119,6 +2146,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputSearchFilters,
 		ec.unmarshalInputSetDefaultDashboardViewInput,
 		ec.unmarshalInputUpdateCategoryInput,
+		ec.unmarshalInputUpdateDashboardViewInput,
 		ec.unmarshalInputUpdateRecordInput,
 		ec.unmarshalInputUpdateTagInput,
 		ec.unmarshalInputUpsertDashboardWidgetInput,
@@ -2311,6 +2339,17 @@ func (ec *executionContext) field_Mutation_createTag_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteDashboardView_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNDeleteDashboardViewInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐDeleteDashboardViewInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteDashboardWidget_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2392,6 +2431,17 @@ func (ec *executionContext) field_Mutation_updateCategory_args(ctx context.Conte
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateCategoryInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐUpdateCategoryInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDashboardView_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateDashboardViewInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐUpdateDashboardViewInput)
 	if err != nil {
 		return nil, err
 	}
@@ -7343,6 +7393,79 @@ func (ec *executionContext) fieldContext_Mutation_createDashboardView(ctx contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateDashboardView(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateDashboardView,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().UpdateDashboardView(ctx, fc.Args["input"].(model.UpdateDashboardViewInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalOString2ᚖstring(ctx, "user")
+				if err != nil {
+					var zeroVal *model.DashboardView
+					return zeroVal, err
+				}
+				if ec.directives.Auth == nil {
+					var zeroVal *model.DashboardView
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNDashboardView2ᚖgithubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐDashboardView,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateDashboardView(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_DashboardView_id(ctx, field)
+			case "name":
+				return ec.fieldContext_DashboardView_name(ctx, field)
+			case "isDefault":
+				return ec.fieldContext_DashboardView_isDefault(ctx, field)
+			case "widgets":
+				return ec.fieldContext_DashboardView_widgets(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_DashboardView_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_DashboardView_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DashboardView", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateDashboardView_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_setDefaultDashboardView(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7410,6 +7533,65 @@ func (ec *executionContext) fieldContext_Mutation_setDefaultDashboardView(ctx co
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_setDefaultDashboardView_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteDashboardView(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteDashboardView,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.resolvers.Mutation().DeleteDashboardView(ctx, fc.Args["input"].(model.DeleteDashboardViewInput))
+		},
+		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
+			directive0 := next
+
+			directive1 := func(ctx context.Context) (any, error) {
+				roles, err := ec.unmarshalOString2ᚖstring(ctx, "user")
+				if err != nil {
+					var zeroVal bool
+					return zeroVal, err
+				}
+				if ec.directives.Auth == nil {
+					var zeroVal bool
+					return zeroVal, errors.New("directive auth is not implemented")
+				}
+				return ec.directives.Auth(ctx, nil, directive0, roles)
+			}
+
+			next = directive1
+			return next
+		},
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteDashboardView(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteDashboardView_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -14116,6 +14298,33 @@ func (ec *executionContext) unmarshalInputDeleteCategoryInput(ctx context.Contex
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDeleteDashboardViewInput(ctx context.Context, obj any) (model.DeleteDashboardViewInput, error) {
+	var it model.DeleteDashboardViewInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDeleteDashboardWidgetInput(ctx context.Context, obj any) (model.DeleteDashboardWidgetInput, error) {
 	var it model.DeleteDashboardWidgetInput
 	asMap := map[string]any{}
@@ -14499,6 +14708,40 @@ func (ec *executionContext) unmarshalInputUpdateCategoryInput(ctx context.Contex
 				return it, err
 			}
 			it.Icon = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateDashboardViewInput(ctx context.Context, obj any) (model.UpdateDashboardViewInput, error) {
+	var it model.UpdateDashboardViewInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"viewId", "name"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "viewId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("viewId"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ViewID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
 		}
 	}
 
@@ -16191,9 +16434,23 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateDashboardView":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateDashboardView(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setDefaultDashboardView":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setDefaultDashboardView(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteDashboardView":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteDashboardView(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -18449,6 +18706,11 @@ func (ec *executionContext) unmarshalNDeleteCategoryInput2githubᚗcomᚋlechitz
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDeleteDashboardViewInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐDeleteDashboardViewInput(ctx context.Context, v any) (model.DeleteDashboardViewInput, error) {
+	res, err := ec.unmarshalInputDeleteDashboardViewInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNDeleteDashboardWidgetInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐDeleteDashboardWidgetInput(ctx context.Context, v any) (model.DeleteDashboardWidgetInput, error) {
 	res, err := ec.unmarshalInputDeleteDashboardWidgetInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -19058,6 +19320,11 @@ func (ec *executionContext) marshalNTag2ᚖgithubᚗcomᚋlechitzᚋaionᚑapi�
 
 func (ec *executionContext) unmarshalNUpdateCategoryInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐUpdateCategoryInput(ctx context.Context, v any) (model.UpdateCategoryInput, error) {
 	res, err := ec.unmarshalInputUpdateCategoryInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateDashboardViewInput2githubᚗcomᚋlechitzᚋaionᚑapiᚋinternalᚋadapterᚋprimaryᚋgraphqlᚋmodelᚐUpdateDashboardViewInput(ctx context.Context, v any) (model.UpdateDashboardViewInput, error) {
+	res, err := ec.unmarshalInputUpdateDashboardViewInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

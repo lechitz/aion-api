@@ -201,9 +201,15 @@ func (recordSvcStub) CreateDashboardView(context.Context, uint64, recordinput.Cr
 	return recorddomain.DashboardView{}, nil
 }
 
+func (recordSvcStub) UpdateDashboardView(context.Context, uint64, uint64, recordinput.UpdateDashboardViewCommand) (recorddomain.DashboardView, error) {
+	return recorddomain.DashboardView{}, nil
+}
+
 func (recordSvcStub) SetDefaultDashboardView(context.Context, uint64, uint64) (recorddomain.DashboardView, error) {
 	return recorddomain.DashboardView{}, nil
 }
+
+func (recordSvcStub) DeleteDashboardView(context.Context, uint64, uint64) error { return nil }
 
 func (recordSvcStub) UpsertDashboardWidget(context.Context, uint64, recordinput.UpsertDashboardWidgetCommand) (recorddomain.DashboardWidget, error) {
 	return recorddomain.DashboardWidget{}, nil

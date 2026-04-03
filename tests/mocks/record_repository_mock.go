@@ -115,6 +115,20 @@ func (mr *MockRecordRepositoryMockRecorder) DeleteAllByUser(ctx, userID any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllByUser", reflect.TypeOf((*MockRecordRepository)(nil).DeleteAllByUser), ctx, userID)
 }
 
+// DeleteDashboardView mocks base method.
+func (m *MockRecordRepository) DeleteDashboardView(ctx context.Context, userID, viewID uint64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDashboardView", ctx, userID, viewID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDashboardView indicates an expected call of DeleteDashboardView.
+func (mr *MockRecordRepositoryMockRecorder) DeleteDashboardView(ctx, userID, viewID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDashboardView", reflect.TypeOf((*MockRecordRepository)(nil).DeleteDashboardView), ctx, userID, viewID)
+}
+
 // DeleteDashboardWidget mocks base method.
 func (m *MockRecordRepository) DeleteDashboardWidget(ctx context.Context, userID, widgetID uint64) error {
 	m.ctrl.T.Helper()
@@ -411,6 +425,21 @@ func (m *MockRecordRepository) Update(ctx context.Context, r domain.Record) (dom
 func (mr *MockRecordRepositoryMockRecorder) Update(ctx, r any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRecordRepository)(nil).Update), ctx, r)
+}
+
+// UpdateDashboardView mocks base method.
+func (m *MockRecordRepository) UpdateDashboardView(ctx context.Context, userID, viewID uint64, name string) (domain.DashboardView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDashboardView", ctx, userID, viewID, name)
+	ret0, _ := ret[0].(domain.DashboardView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDashboardView indicates an expected call of UpdateDashboardView.
+func (mr *MockRecordRepositoryMockRecorder) UpdateDashboardView(ctx, userID, viewID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDashboardView", reflect.TypeOf((*MockRecordRepository)(nil).UpdateDashboardView), ctx, userID, viewID, name)
 }
 
 // UpsertDashboardWidget mocks base method.

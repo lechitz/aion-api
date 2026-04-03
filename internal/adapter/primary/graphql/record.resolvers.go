@@ -296,10 +296,25 @@ func (m *mutationResolver) CreateDashboardView(ctx context.Context, input model.
 	return m.RecordController().CreateDashboardView(ctx, uid, input)
 }
 
+// UpdateDashboardView is the resolver for the updateDashboardView field.
+func (m *mutationResolver) UpdateDashboardView(ctx context.Context, input model.UpdateDashboardViewInput) (*model.DashboardView, error) {
+	uid, _ := ctx.Value(ctxkeys.UserID).(uint64)
+	return m.RecordController().UpdateDashboardView(ctx, uid, input)
+}
+
 // SetDefaultDashboardView is the resolver for the setDefaultDashboardView field.
 func (m *mutationResolver) SetDefaultDashboardView(ctx context.Context, input model.SetDefaultDashboardViewInput) (*model.DashboardView, error) {
 	uid, _ := ctx.Value(ctxkeys.UserID).(uint64)
 	return m.RecordController().SetDefaultDashboardView(ctx, uid, input.ViewID)
+}
+
+// DeleteDashboardView is the resolver for the deleteDashboardView field.
+func (m *mutationResolver) DeleteDashboardView(ctx context.Context, input model.DeleteDashboardViewInput) (bool, error) {
+	uid, _ := ctx.Value(ctxkeys.UserID).(uint64)
+	if err := m.RecordController().DeleteDashboardView(ctx, uid, input.ID); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // UpsertDashboardWidget is the resolver for the upsertDashboardWidget field.

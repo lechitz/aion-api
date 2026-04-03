@@ -92,6 +92,62 @@ func TestUpsertDashboardWidget_MapsGraphQLEnumsToUsecaseContract(t *testing.T) {
 	assert.Equal(t, config, *out.ConfigJSON)
 }
 
+func TestUpdateDashboardView_MapsRenameCommand(t *testing.T) {
+	var capturedViewID uint64
+	var captured input.UpdateDashboardViewCommand
+	now := time.Date(2026, 3, 20, 10, 0, 0, 0, time.UTC)
+
+	svc := &recordServiceStub{
+		updateViewFn: func(_ context.Context, userID uint64, viewID uint64, cmd input.UpdateDashboardViewCommand) (domain.DashboardView, error) {
+			require.Equal(t, uint64(999), userID)
+			capturedViewID = viewID
+			captured = cmd
+			return domain.DashboardView{
+				ID:        viewID,
+				UserID:    userID,
+				Name:      cmd.Name,
+				IsDefault: false,
+				CreatedAt: now,
+				UpdatedAt: now,
+			}, nil
+		},
+	}
+
+	h, ctrl := newRecordController(t, svc)
+	defer ctrl.Finish()
+
+	out, err := h.UpdateDashboardView(t.Context(), 999, gmodel.UpdateDashboardViewInput{
+		ViewID: "15",
+		Name:   "Foco semanal",
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, out)
+	assert.Equal(t, uint64(15), capturedViewID)
+	assert.Equal(t, "Foco semanal", captured.Name)
+	assert.Equal(t, "Foco semanal", out.Name)
+}
+
+func TestDeleteDashboardView_MapsDeleteRequest(t *testing.T) {
+	var capturedViewID uint64
+
+	svc := &recordServiceStub{
+		deleteViewFn: func(_ context.Context, userID uint64, viewID uint64) error {
+			require.Equal(t, uint64(999), userID)
+			capturedViewID = viewID
+			return nil
+		},
+	}
+
+	h, ctrl := newRecordController(t, svc)
+	defer ctrl.Finish()
+
+	err := h.DeleteDashboardView(t.Context(), 999, "21")
+
+	require.NoError(t, err)
+	assert.Equal(t, uint64(21), capturedViewID)
+}
+
 func TestCreateMetricAndWidget_MapsMetricAndWidgetCommands(t *testing.T) {
 	var captured input.CreateMetricAndWidgetCommand
 	title := "Hidratacao"

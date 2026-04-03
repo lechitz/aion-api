@@ -55,7 +55,9 @@ type RecordController interface {
 	ListDashboardViews(ctx context.Context, userID uint64) ([]*model.DashboardView, error)
 	GetDashboardView(ctx context.Context, userID uint64, viewID string) (*model.DashboardView, error)
 	CreateDashboardView(ctx context.Context, userID uint64, in model.CreateDashboardViewInput) (*model.DashboardView, error)
+	UpdateDashboardView(ctx context.Context, userID uint64, in model.UpdateDashboardViewInput) (*model.DashboardView, error)
 	SetDefaultDashboardView(ctx context.Context, userID uint64, viewID string) (*model.DashboardView, error)
+	DeleteDashboardView(ctx context.Context, userID uint64, viewID string) error
 	UpsertDashboardWidget(ctx context.Context, userID uint64, in model.UpsertDashboardWidgetInput) (*model.DashboardWidget, error)
 	ReorderDashboardWidgets(ctx context.Context, userID uint64, in model.ReorderDashboardWidgetsInput) ([]*model.DashboardWidget, error)
 	DeleteDashboardWidget(ctx context.Context, userID uint64, widgetID string) error
