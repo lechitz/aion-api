@@ -170,6 +170,10 @@ type DeleteCategoryInput struct {
 	ID string `json:"id"`
 }
 
+type DeleteDashboardViewInput struct {
+	ID string `json:"id"`
+}
+
 type DeleteDashboardWidgetInput struct {
 	ID string `json:"id"`
 }
@@ -356,6 +360,11 @@ type UpdateCategoryInput struct {
 	Description *string `json:"description,omitempty"`
 	ColorHex    *string `json:"colorHex,omitempty"`
 	Icon        *string `json:"icon,omitempty"`
+}
+
+type UpdateDashboardViewInput struct {
+	ViewID string `json:"viewId"`
+	Name   string `json:"name"`
 }
 
 type UpdateRecordInput struct {

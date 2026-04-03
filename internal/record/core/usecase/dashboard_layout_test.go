@@ -93,3 +93,54 @@ func TestService_UpsertDashboardWidget_EnforcesLargeWidgetLimit(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorContains(t, err, fmt.Sprintf(usecase.ErrDashboardLimitLargeWidgets, domain.MaxLargeWidgetsPerDashboard))
 }
+
+func TestService_UpdateDashboardView_RequiresName(t *testing.T) {
+	suite := setup.RecordServiceTest(t)
+	defer suite.Ctrl.Finish()
+
+	_, err := suite.RecordService.UpdateDashboardView(t.Context(), 999, 10, input.UpdateDashboardViewCommand{
+		Name: "   ",
+	})
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, usecase.ErrDashboardViewNameRequired)
+}
+
+func TestService_DeleteDashboardView_BlocksLastView(t *testing.T) {
+	suite := setup.RecordServiceTest(t)
+	defer suite.Ctrl.Finish()
+
+	userID := uint64(999)
+	viewID := uint64(10)
+	suite.RecordRepository.EXPECT().
+		ListDashboardViews(gomock.Any(), userID).
+		Return([]domain.DashboardView{
+			{ID: viewID, UserID: userID, Name: "Principal", IsDefault: true},
+		}, nil)
+
+	err := suite.RecordService.DeleteDashboardView(t.Context(), userID, viewID)
+
+	require.Error(t, err)
+	assert.ErrorContains(t, err, usecase.ErrDashboardLastViewDeleteBlocked)
+}
+
+func TestService_DeleteDashboardView_RemovesViewWhenOthersRemain(t *testing.T) {
+	suite := setup.RecordServiceTest(t)
+	defer suite.Ctrl.Finish()
+
+	userID := uint64(999)
+	viewID := uint64(10)
+	suite.RecordRepository.EXPECT().
+		ListDashboardViews(gomock.Any(), userID).
+		Return([]domain.DashboardView{
+			{ID: viewID, UserID: userID, Name: "Principal", IsDefault: true},
+			{ID: 11, UserID: userID, Name: "Secundaria", IsDefault: false},
+		}, nil)
+	suite.RecordRepository.EXPECT().
+		DeleteDashboardView(gomock.Any(), userID, viewID).
+		Return(nil)
+
+	err := suite.RecordService.DeleteDashboardView(t.Context(), userID, viewID)
+
+	require.NoError(t, err)
+}

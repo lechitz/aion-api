@@ -1,0 +1,1 @@
+mutation DeleteDashboardView($input: DeleteDashboardViewInput!) { deleteDashboardView(input: $input) }

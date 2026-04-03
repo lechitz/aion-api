@@ -41,7 +41,9 @@ type RecordRepository interface {
 	ListDashboardViews(ctx context.Context, userID uint64) ([]domain.DashboardView, error)
 	GetDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error)
 	CreateDashboardView(ctx context.Context, view domain.DashboardView) (domain.DashboardView, error)
+	UpdateDashboardView(ctx context.Context, userID uint64, viewID uint64, name string) (domain.DashboardView, error)
 	SetDefaultDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error)
+	DeleteDashboardView(ctx context.Context, userID uint64, viewID uint64) error
 	UpsertDashboardWidget(ctx context.Context, widget domain.DashboardWidget) (domain.DashboardWidget, error)
 	ListDashboardWidgetsByView(ctx context.Context, userID uint64, viewID uint64) ([]domain.DashboardWidget, error)
 	ReorderDashboardWidgets(ctx context.Context, userID uint64, viewID uint64, items []domain.DashboardWidget) ([]domain.DashboardWidget, error)

@@ -291,8 +291,17 @@ input CreateDashboardViewInput {
     isDefault: Boolean
 }
 
+input UpdateDashboardViewInput {
+    viewId: ID!
+    name: String!
+}
+
 input SetDefaultDashboardViewInput {
     viewId: ID!
+}
+
+input DeleteDashboardViewInput {
+    id: ID!
 }
 
 input UpsertDashboardWidgetInput {
@@ -359,7 +368,9 @@ extend type Mutation {
     upsertGoalTemplate(input: UpsertGoalTemplateInput!): GoalTemplate! @auth(roles: "user")
     deleteGoalTemplate(input: DeleteGoalTemplateInput!): Boolean! @auth(roles: "user")
     createDashboardView(input: CreateDashboardViewInput!): DashboardView! @auth(roles: "user")
+    updateDashboardView(input: UpdateDashboardViewInput!): DashboardView! @auth(roles: "user")
     setDefaultDashboardView(input: SetDefaultDashboardViewInput!): DashboardView! @auth(roles: "user")
+    deleteDashboardView(input: DeleteDashboardViewInput!): Boolean! @auth(roles: "user")
     upsertDashboardWidget(input: UpsertDashboardWidgetInput!): DashboardWidget! @auth(roles: "user")
     reorderDashboardWidgets(input: ReorderDashboardWidgetsInput!): [DashboardWidget!]! @auth(roles: "user")
     deleteDashboardWidget(input: DeleteDashboardWidgetInput!): Boolean! @auth(roles: "user")

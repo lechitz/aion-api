@@ -313,6 +313,8 @@ const (
 // Dashboard validation and domain messages.
 const (
 	ErrDashboardViewIDRequired             = "viewID is required"
+	ErrDashboardViewNameRequired           = "dashboard view name is required"
+	ErrDashboardLastViewDeleteBlocked      = "cannot delete the last dashboard view"
 	ErrDashboardMetricDefinitionIDRequired = "metricDefinitionID is required"
 	ErrDashboardItemsRequired              = "items are required"
 	ErrDashboardWidgetIDRequired           = "widgetID is required"

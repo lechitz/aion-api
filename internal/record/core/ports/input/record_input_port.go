@@ -63,7 +63,9 @@ type RecordService interface {
 	ListDashboardViews(ctx context.Context, userID uint64) ([]domain.DashboardView, error)
 	GetDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error)
 	CreateDashboardView(ctx context.Context, userID uint64, cmd CreateDashboardViewCommand) (domain.DashboardView, error)
+	UpdateDashboardView(ctx context.Context, userID uint64, viewID uint64, cmd UpdateDashboardViewCommand) (domain.DashboardView, error)
 	SetDefaultDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error)
+	DeleteDashboardView(ctx context.Context, userID uint64, viewID uint64) error
 	UpsertDashboardWidget(ctx context.Context, userID uint64, cmd UpsertDashboardWidgetCommand) (domain.DashboardWidget, error)
 	ReorderDashboardWidgets(ctx context.Context, userID uint64, cmd ReorderDashboardWidgetsCommand) ([]domain.DashboardWidget, error)
 	DeleteDashboardWidget(ctx context.Context, userID uint64, widgetID uint64) error

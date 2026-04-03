@@ -2,11 +2,13 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	dbport "github.com/lechitz/aion-api/internal/platform/ports/output/db"
 	"github.com/lechitz/aion-api/internal/record/adapter/secondary/db/mapper"
 	"github.com/lechitz/aion-api/internal/record/adapter/secondary/db/model"
 	"github.com/lechitz/aion-api/internal/record/core/domain"
+	"gorm.io/gorm"
 )
 
 // ListDashboardViews returns all dashboard views for a user ordered by default flag and ID.
@@ -53,6 +55,24 @@ func (r *RecordRepository) CreateDashboardView(ctx context.Context, view domain.
 	return mapper.DashboardViewFromDB(row), nil
 }
 
+// UpdateDashboardView renames one dashboard view.
+func (r *RecordRepository) UpdateDashboardView(ctx context.Context, userID uint64, viewID uint64, name string) (domain.DashboardView, error) {
+	if err := r.db.WithContext(ctx).
+		Model(&model.DashboardView{}).
+		Where("id = ? AND user_id = ?", viewID, userID).
+		Update("name", name).Error(); err != nil {
+		return domain.DashboardView{}, err
+	}
+
+	var row model.DashboardView
+	if err := r.db.WithContext(ctx).
+		Where("id = ? AND user_id = ?", viewID, userID).
+		First(&row).Error(); err != nil {
+		return domain.DashboardView{}, err
+	}
+	return mapper.DashboardViewFromDB(row), nil
+}
+
 // SetDefaultDashboardView marks one dashboard view as default for the user.
 func (r *RecordRepository) SetDefaultDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error) {
 	err := r.db.WithContext(ctx).Transaction(func(tx dbport.DB) error {
@@ -80,6 +100,50 @@ func (r *RecordRepository) SetDefaultDashboardView(ctx context.Context, userID u
 		return domain.DashboardView{}, err
 	}
 	return mapper.DashboardViewFromDB(row), nil
+}
+
+// DeleteDashboardView removes one dashboard view and its widgets, promoting another default if needed.
+func (r *RecordRepository) DeleteDashboardView(ctx context.Context, userID uint64, viewID uint64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx dbport.DB) error {
+		var current model.DashboardView
+		if err := tx.
+			Where("id = ? AND user_id = ?", viewID, userID).
+			First(&current).Error(); err != nil {
+			return err
+		}
+
+		if err := tx.
+			Where("user_id = ? AND view_id = ?", userID, viewID).
+			Delete(&model.DashboardWidget{}).Error(); err != nil {
+			return err
+		}
+
+		if err := tx.
+			Where("id = ? AND user_id = ?", viewID, userID).
+			Delete(&model.DashboardView{}).Error(); err != nil {
+			return err
+		}
+
+		if !current.IsDefault {
+			return nil
+		}
+
+		var fallback model.DashboardView
+		if err := tx.
+			Where("user_id = ?", userID).
+			Order("id ASC").
+			First(&fallback).Error(); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+
+		return tx.
+			Model(&model.DashboardView{}).
+			Where("id = ? AND user_id = ?", fallback.ID, userID).
+			Update("is_default", true).Error()
+	})
 }
 
 // UpsertDashboardWidget creates or updates a dashboard widget.

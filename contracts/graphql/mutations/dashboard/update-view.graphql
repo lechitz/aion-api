@@ -1,0 +1,1 @@
+mutation UpdateDashboardView($input: UpdateDashboardViewInput!) { updateDashboardView(input: $input) { id name isDefault widgets { id viewId metricDefinitionId widgetType size orderIndex titleOverride configJson isActive createdAt updatedAt } createdAt updatedAt } }

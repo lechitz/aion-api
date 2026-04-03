@@ -57,6 +57,23 @@ func (s *Service) CreateDashboardView(ctx context.Context, userID uint64, cmd in
 	return view, nil
 }
 
+// UpdateDashboardView renames one dashboard view.
+func (s *Service) UpdateDashboardView(ctx context.Context, userID uint64, viewID uint64, cmd input.UpdateDashboardViewCommand) (domain.DashboardView, error) {
+	if userID == 0 {
+		return domain.DashboardView{}, ErrUserIDIsRequired
+	}
+	if viewID == 0 {
+		return domain.DashboardView{}, errors.New(ErrDashboardViewIDRequired)
+	}
+
+	name := strings.TrimSpace(cmd.Name)
+	if name == "" {
+		return domain.DashboardView{}, errors.New(ErrDashboardViewNameRequired)
+	}
+
+	return s.RecordRepository.UpdateDashboardView(ctx, userID, viewID, name)
+}
+
 // SetDefaultDashboardView sets the user's default dashboard view.
 func (s *Service) SetDefaultDashboardView(ctx context.Context, userID uint64, viewID uint64) (domain.DashboardView, error) {
 	if userID == 0 {
@@ -66,6 +83,27 @@ func (s *Service) SetDefaultDashboardView(ctx context.Context, userID uint64, vi
 		return domain.DashboardView{}, errors.New(ErrDashboardViewIDRequired)
 	}
 	return s.RecordRepository.SetDefaultDashboardView(ctx, userID, viewID)
+}
+
+// DeleteDashboardView removes one dashboard view while preserving at least one remaining view.
+func (s *Service) DeleteDashboardView(ctx context.Context, userID uint64, viewID uint64) error {
+	if userID == 0 {
+		return ErrUserIDIsRequired
+	}
+	if viewID == 0 {
+		return errors.New(ErrDashboardViewIDRequired)
+	}
+
+	views, err := s.ensureDashboardViews(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if len(views) <= 1 {
+		return errors.New(ErrDashboardLastViewDeleteBlocked)
+	}
+
+	return s.RecordRepository.DeleteDashboardView(ctx, userID, viewID)
 }
 
 // UpsertDashboardWidget creates or updates a dashboard widget.
