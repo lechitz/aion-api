@@ -10,6 +10,7 @@ import (
 
 	chatdto "github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
 	chathttp "github.com/lechitz/aion-api/internal/chat/adapter/secondary/http"
+	"github.com/lechitz/aion-api/internal/platform/server/http/utils/sharederrors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -80,6 +81,30 @@ func TestSendMessage_Success(t *testing.T) {
 	require.Equal(t, 10, resp.TokensUsed)
 }
 
+func TestSendMessage_Success_WithRuntimeSelection(t *testing.T) {
+	reqPayload := newRequest()
+	reqPayload.Runtime = &chatdto.ChatRuntimeSelection{
+		Provider: "openai",
+		Model:    "gpt-5.4-mini",
+	}
+
+	client := chathttp.New(mockChatHTTPClient{
+		doFn: func(req *stdhttp.Request) (*stdhttp.Response, error) {
+			body, err := io.ReadAll(req.Body)
+			require.NoError(t, err)
+			require.Contains(t, string(body), `"runtime":{"provider":"openai","model":"gpt-5.4-mini"}`)
+			return &stdhttp.Response{
+				StatusCode: stdhttp.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(`{"response":"ok"}`)),
+			}, nil
+		},
+	}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
+
+	resp, err := client.SendMessage(t.Context(), reqPayload)
+	require.NoError(t, err)
+	require.Equal(t, "ok", resp.Response)
+}
+
 func TestSendMessage_Errors(t *testing.T) {
 	t.Run("marshal error", func(t *testing.T) {
 		client := chathttp.New(mockChatHTTPClient{
@@ -139,6 +164,27 @@ func TestSendMessage_Errors(t *testing.T) {
 
 		_, err := client.SendMessage(t.Context(), newRequest())
 		require.Error(t, err)
+	})
+
+	t.Run("bad request becomes validation error", func(t *testing.T) {
+		client := chathttp.New(mockChatHTTPClient{
+			doFn: func(_ *stdhttp.Request) (*stdhttp.Response, error) {
+				return &stdhttp.Response{
+					StatusCode: stdhttp.StatusBadRequest,
+					Body: io.NopCloser(strings.NewReader(
+						`{"detail":"Invalid runtime provider 'invalid-provider'. Available: ['ollama','openai']"}`,
+					)),
+				}, nil
+			},
+		}, "http://aion-dev-chat:8000", mockChatHTTPLogger{})
+
+		_, err := client.SendMessage(t.Context(), newRequest())
+		require.Error(t, err)
+
+		var validationErr *sharederrors.ValidationError
+		require.ErrorAs(t, err, &validationErr)
+		require.Equal(t, "runtime", validationErr.Field)
+		require.Contains(t, validationErr.Reason, "Invalid runtime provider")
 	})
 
 	t.Run("unmarshal error", func(t *testing.T) {

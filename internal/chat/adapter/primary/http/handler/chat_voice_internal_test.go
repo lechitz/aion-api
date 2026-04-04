@@ -84,7 +84,7 @@ func TestVoiceBuildMultipartRequest(t *testing.T) {
 	t.Run("success with language", func(t *testing.T) {
 		file := &memMultipartFile{Reader: bytes.NewReader([]byte("audio-bytes"))}
 		rec := httptest.NewRecorder()
-		buf, contentType, ok := h.buildMultipartRequest(t.Context(), rec, span, file, header, 5, "pt")
+		buf, contentType, ok := h.buildMultipartRequest(t.Context(), rec, span, file, header, 5, "pt", "openai", "gpt-4.1-mini")
 		if !ok {
 			t.Fatal("expected success")
 		}
@@ -94,14 +94,66 @@ func TestVoiceBuildMultipartRequest(t *testing.T) {
 		if !bytes.Contains(buf.Bytes(), []byte("audio-bytes")) {
 			t.Fatal("expected multipart payload to contain audio bytes")
 		}
+		if !bytes.Contains(buf.Bytes(), []byte(`name="provider"`)) {
+			t.Fatal("expected multipart payload to contain provider field")
+		}
+		if !bytes.Contains(buf.Bytes(), []byte(`gpt-4.1-mini`)) {
+			t.Fatal("expected multipart payload to contain model field")
+		}
 	})
 
 	t.Run("copy error", func(t *testing.T) {
 		file := &errMultipartFile{}
 		rec := httptest.NewRecorder()
-		_, _, ok := h.buildMultipartRequest(t.Context(), rec, span, file, header, 5, "")
+		_, _, ok := h.buildMultipartRequest(t.Context(), rec, span, file, header, 5, "", "", "")
 		if ok {
 			t.Fatal("expected failure when audio copy fails")
+		}
+	})
+}
+
+func TestExtractRuntimeOverrideFromMultipart(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		provider, model, err := extractRuntimeOverrideFromMultipart(nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if provider != "" || model != "" {
+			t.Fatalf("unexpected runtime override: provider=%q model=%q", provider, model)
+		}
+	})
+
+	t.Run("provider required when model present", func(t *testing.T) {
+		form := &multipart.Form{Value: map[string][]string{
+			FormFieldModel: {"gpt-4.1-mini"},
+		}}
+		_, _, err := extractRuntimeOverrideFromMultipart(form)
+		if err == nil || err.Error() != "runtime.provider is required when runtime is present" {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("model required when provider present", func(t *testing.T) {
+		form := &multipart.Form{Value: map[string][]string{
+			FormFieldProvider: {"openai"},
+		}}
+		_, _, err := extractRuntimeOverrideFromMultipart(form)
+		if err == nil || err.Error() != "runtime.model is required when runtime is present" {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("success", func(t *testing.T) {
+		form := &multipart.Form{Value: map[string][]string{
+			FormFieldProvider: {" openai "},
+			FormFieldModel:    {" gpt-4.1-mini "},
+		}}
+		provider, model, err := extractRuntimeOverrideFromMultipart(form)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if provider != "openai" || model != "gpt-4.1-mini" {
+			t.Fatalf("unexpected runtime override: provider=%q model=%q", provider, model)
 		}
 	})
 }

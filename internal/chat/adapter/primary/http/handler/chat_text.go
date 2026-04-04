@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
+	"github.com/lechitz/aion-api/internal/chat/core/domain"
 	"github.com/lechitz/aion-api/internal/platform/server/http/utils/httpresponse"
 	"github.com/lechitz/aion-api/internal/platform/server/http/utils/sharederrors"
 	"github.com/lechitz/aion-api/internal/shared/constants/commonkeys"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // ChatText processes a chat message from the user and returns the AI response.
@@ -40,21 +42,8 @@ func (h *Handler) ChatText(w http.ResponseWriter, r *http.Request) {
 		Start(r.Context(), SpanChatHandler)
 	defer span.End()
 
-	userIDValue := ctx.Value(ctxkeys.UserID)
-	if userIDValue == nil {
-		span.SetStatus(codes.Error, ErrUserIDNotFound)
-		h.Logger.ErrorwCtx(ctx, ErrUserIDNotFound)
-		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
-			sharederrors.NewAuthenticationError(ErrUserIDNotFound), h.Logger)
-		return
-	}
-
-	userID, ok := userIDValue.(uint64)
+	userID, ok := h.chatTextUserID(ctx, w, span)
 	if !ok {
-		span.SetStatus(codes.Error, ErrInvalidUserIDType)
-		h.Logger.ErrorwCtx(ctx, LogInvalidUserIDType, LogKeyValue, userIDValue)
-		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
-			sharederrors.NewAuthenticationError(ErrInvalidUserID), h.Logger)
 		return
 	}
 
@@ -63,43 +52,13 @@ func (h *Handler) ChatText(w http.ResponseWriter, r *http.Request) {
 		attribute.String(tracingkeys.RequestIPKey, r.RemoteAddr),
 	)
 
-	span.AddEvent(EventDecodeRequest)
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<21) // 2MB
-	var chatReq dto.ChatRequest
-	if err := json.NewDecoder(r.Body).Decode(&chatReq); err != nil {
-		httpresponse.WriteDecodeErrorSpan(ctx, w, span, err, h.Logger)
+	chatReq, ok := h.decodeChatTextRequest(ctx, w, r, span)
+	if !ok {
 		return
 	}
 
-	span.AddEvent(EventValidateRequest)
-	if err := validateChatRequest(chatReq); err != nil {
-		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
-			sharederrors.NewValidationError(FormFieldMessage, err.Error()), h.Logger)
-		return
-	}
-
-	span.SetAttributes(
-		attribute.Int(AttrMessageLength, len(chatReq.Message)),
-	)
-	chatReq.Context = normalizeUIActionQuickAdd(chatReq.Context)
-	h.logUIActionMetadata(ctx, userID, chatReq.Context)
-
-	h.Logger.InfowCtx(ctx, MsgChatRequestStart, commonkeys.UserID, strconv.FormatUint(userID, 10), AttrMessageLength, len(chatReq.Message))
-
-	span.AddEvent(EventCallService)
-	result, err := h.Service.ProcessMessage(ctx, userID, chatReq.Message, chatReq.Context)
-	if err != nil {
-		if isClientCancelledError(err) {
-			span.AddEvent(EventChatCancelled)
-			span.SetStatus(codes.Ok, StatusChatCancelled)
-			h.Logger.InfowCtx(ctx, MsgChatCancelled,
-				commonkeys.UserID, strconv.FormatUint(userID, 10),
-			)
-			httpresponse.WriteSuccess(w, HTTPStatusClientClosedRequest, nil, MsgChatCancelledResponse)
-			return
-		}
-		span.AddEvent(EventChatError)
-		httpresponse.WriteDomainErrorSpan(ctx, w, span, err, ErrChat, h.Logger)
+	result, ok := h.processChatTextRequest(ctx, w, span, userID, chatReq)
+	if !ok {
 		return
 	}
 
@@ -132,6 +91,89 @@ func (h *Handler) ChatText(w http.ResponseWriter, r *http.Request) {
 	httpresponse.WriteSuccess(w, http.StatusOK, response, MsgChatSuccess)
 }
 
+func (h *Handler) chatTextUserID(ctx context.Context, w http.ResponseWriter, span trace.Span) (uint64, bool) {
+	userIDValue := ctx.Value(ctxkeys.UserID)
+	if userIDValue == nil {
+		span.SetStatus(codes.Error, ErrUserIDNotFound)
+		h.Logger.ErrorwCtx(ctx, ErrUserIDNotFound)
+		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
+			sharederrors.NewAuthenticationError(ErrUserIDNotFound), h.Logger)
+		return 0, false
+	}
+
+	userID, ok := userIDValue.(uint64)
+	if !ok {
+		span.SetStatus(codes.Error, ErrInvalidUserIDType)
+		h.Logger.ErrorwCtx(ctx, LogInvalidUserIDType, LogKeyValue, userIDValue)
+		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
+			sharederrors.NewAuthenticationError(ErrInvalidUserID), h.Logger)
+		return 0, false
+	}
+
+	return userID, true
+}
+
+func (h *Handler) decodeChatTextRequest(
+	ctx context.Context,
+	w http.ResponseWriter,
+	r *http.Request,
+	span trace.Span,
+) (dto.ChatRequest, bool) {
+	span.AddEvent(EventDecodeRequest)
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<21) // 2MB
+	var chatReq dto.ChatRequest
+	if err := json.NewDecoder(r.Body).Decode(&chatReq); err != nil {
+		httpresponse.WriteDecodeErrorSpan(ctx, w, span, err, h.Logger)
+		return dto.ChatRequest{}, false
+	}
+
+	span.AddEvent(EventValidateRequest)
+	if err := validateChatRequest(chatReq); err != nil {
+		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
+			sharederrors.NewValidationError(FormFieldMessage, err.Error()), h.Logger)
+		return dto.ChatRequest{}, false
+	}
+
+	return chatReq, true
+}
+
+func (h *Handler) processChatTextRequest(
+	ctx context.Context,
+	w http.ResponseWriter,
+	span trace.Span,
+	userID uint64,
+	chatReq dto.ChatRequest,
+) (*domain.ChatResult, bool) {
+	span.SetAttributes(attribute.Int(AttrMessageLength, len(chatReq.Message)))
+	chatReq.Context = normalizeUIActionQuickAdd(chatReq.Context)
+	h.logUIActionMetadata(ctx, userID, chatReq.Context)
+
+	h.Logger.InfowCtx(ctx, MsgChatRequestStart, commonkeys.UserID, strconv.FormatUint(userID, 10), AttrMessageLength, len(chatReq.Message))
+
+	span.AddEvent(EventCallService)
+	result, err := h.Service.ProcessMessage(ctx, userID, chatReq.Message, chatReq.Context, chatReq.Runtime)
+	if err != nil {
+		if isClientCancelledError(err) {
+			span.AddEvent(EventChatCancelled)
+			span.SetStatus(codes.Ok, StatusChatCancelled)
+			h.Logger.InfowCtx(ctx, MsgChatCancelled,
+				commonkeys.UserID, strconv.FormatUint(userID, 10),
+			)
+			httpresponse.WriteSuccess(w, HTTPStatusClientClosedRequest, nil, MsgChatCancelledResponse)
+			return nil, false
+		}
+		span.AddEvent(EventChatError)
+		if sharederrors.MapErrorToHTTPStatus(err) == http.StatusBadRequest {
+			httpresponse.WriteValidationErrorSpan(ctx, w, span, err, h.Logger)
+			return nil, false
+		}
+		httpresponse.WriteDomainErrorSpan(ctx, w, span, err, ErrChat, h.Logger)
+		return nil, false
+	}
+
+	return result, true
+}
+
 // validateChatRequest validates the chat request payload.
 func validateChatRequest(req dto.ChatRequest) error {
 	msg := strings.TrimSpace(req.Message)
@@ -146,6 +188,15 @@ func validateChatRequest(req dto.ChatRequest) error {
 
 	if len(msg) > MaxMessageLength {
 		return errors.New(ErrMessageTooLong)
+	}
+
+	if req.Runtime != nil {
+		if strings.TrimSpace(req.Runtime.Provider) == "" {
+			return errors.New("runtime.provider is required when runtime is present")
+		}
+		if strings.TrimSpace(req.Runtime.Model) == "" {
+			return errors.New("runtime.model is required when runtime is present")
+		}
 	}
 
 	return nil

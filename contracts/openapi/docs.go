@@ -563,6 +563,18 @@ const docTemplate = `{
                         "description": "Language code (pt, en, es) or auto-detect if empty",
                         "name": "language",
                         "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional runtime provider override (for example: openai, ollama)",
+                        "name": "provider",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional runtime model override when provider is present",
+                        "name": "model",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -1187,6 +1199,9 @@ const docTemplate = `{
                     "maxLength": 2000,
                     "minLength": 1,
                     "example": "Quanto de água eu bebi hoje?"
+                },
+                "runtime": {
+                    "$ref": "#/definitions/dto.ChatRuntimeSelection"
                 }
             }
         },
@@ -1210,6 +1225,19 @@ const docTemplate = `{
                 },
                 "usage": {
                     "$ref": "#/definitions/dto.TokenUsage"
+                }
+            }
+        },
+        "dto.ChatRuntimeSelection": {
+            "type": "object",
+            "properties": {
+                "model": {
+                    "type": "string",
+                    "example": "gpt-5.4-mini"
+                },
+                "provider": {
+                    "type": "string",
+                    "example": "openai"
                 }
             }
         },

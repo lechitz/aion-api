@@ -1,11 +1,20 @@
 // Package dto contains data transfer objects for chat HTTP requests/responses.
 package dto
 
+import (
+	"github.com/lechitz/aion-api/internal/chat/core/domain"
+	outputport "github.com/lechitz/aion-api/internal/chat/core/ports/output"
+)
+
 // ChatRequest represents the incoming chat message from the client.
 type ChatRequest struct {
 	Message string                 `json:"message"           validate:"required,min=1,max=2000" example:"Quanto de água eu bebi hoje?"`
 	Context map[string]interface{} `json:"context,omitempty"`
+	Runtime *ChatRuntimeSelection  `json:"runtime,omitempty"`
 }
+
+// ChatRuntimeSelection represents the requested LLM runtime selection.
+type ChatRuntimeSelection = domain.RuntimeSelection
 
 // ChatResponse represents the response returned to the client.
 type ChatResponse struct {
@@ -32,30 +41,13 @@ type TokenUsage struct {
 }
 
 // ConversationMessage represents a single message in the conversation history.
-type ConversationMessage struct {
-	Role    string `json:"role"`    // "user" or "assistant"
-	Content string `json:"content"` // Message content
-}
+type ConversationMessage = outputport.ConversationMessage
 
 // InternalChatRequest represents the request sent to the Aion-Chat service (Python).
-type InternalChatRequest struct {
-	UserID              uint64                 `json:"user_id"`
-	Message             string                 `json:"message"`
-	ConversationHistory []ConversationMessage  `json:"conversation_history,omitempty"`
-	Context             map[string]interface{} `json:"context,omitempty"`
-}
+type InternalChatRequest = outputport.SendMessageRequest
 
 // InternalChatResponse represents the response from the Aion-Chat service.
-type InternalChatResponse struct {
-	Response      string                   `json:"response"`
-	UI            map[string]interface{}   `json:"ui,omitempty"`
-	FunctionCalls []FunctionCall           `json:"function_calls,omitempty"`
-	TokensUsed    int                      `json:"tokens_used,omitempty"`
-	Sources       []map[string]interface{} `json:"sources,omitempty"`
-}
+type InternalChatResponse = outputport.SendMessageResponse
 
 // FunctionCall represents a function that was called by the LLM.
-type FunctionCall struct {
-	Name string                 `json:"name"`
-	Args map[string]interface{} `json:"args"`
-}
+type FunctionCall = outputport.FunctionCall

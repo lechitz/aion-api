@@ -5,15 +5,16 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
+	"github.com/lechitz/aion-api/internal/chat/core/domain"
+	outputport "github.com/lechitz/aion-api/internal/chat/core/ports/output"
 )
 
 // fetchConversationHistory retrieves recent chat history from cache (Redis).
 // It fetches the last N messages and converts them to conversation format
 // with proper role ordering (oldest first, as required by LLMs).
 // Non-blocking: returns empty slice on cache error.
-func (s *ChatService) fetchConversationHistory(ctx context.Context, userID uint64, limit int) []dto.ConversationMessage {
-	conversationHistory := []dto.ConversationMessage{}
+func (s *ChatService) fetchConversationHistory(ctx context.Context, userID uint64, limit int) []outputport.ConversationMessage {
+	conversationHistory := []outputport.ConversationMessage{}
 
 	history, err := s.chatHistoryCache.GetLatest(ctx, userID, limit)
 	if err != nil {
@@ -34,12 +35,12 @@ func (s *ChatService) fetchConversationHistory(ctx context.Context, userID uint6
 	for i := len(history) - 1; i >= 0; i-- {
 		h := history[i]
 		// Add user message
-		conversationHistory = append(conversationHistory, dto.ConversationMessage{
+		conversationHistory = append(conversationHistory, outputport.ConversationMessage{
 			Role:    "user",
 			Content: h.Message,
 		})
 		// Add assistant response
-		conversationHistory = append(conversationHistory, dto.ConversationMessage{
+		conversationHistory = append(conversationHistory, outputport.ConversationMessage{
 			Role:    "assistant",
 			Content: h.Response,
 		})
@@ -57,9 +58,10 @@ func (s *ChatService) fetchConversationHistory(ctx context.Context, userID uint6
 func buildChatRequest(
 	userID uint64,
 	message string,
-	history []dto.ConversationMessage,
+	history []outputport.ConversationMessage,
 	context map[string]interface{},
-) *dto.InternalChatRequest {
+	runtime *domain.RuntimeSelection,
+) *outputport.SendMessageRequest {
 	payloadContext := map[string]interface{}{
 		ContextKeyTimezone:     DefaultTimezone, // Backward-compatible key
 		ContextKeyUserTimezone: DefaultTimezone, // Canonical key for aion-chat
@@ -67,18 +69,19 @@ func buildChatRequest(
 	for key, value := range context {
 		payloadContext[key] = value
 	}
-	return &dto.InternalChatRequest{
+	return &outputport.SendMessageRequest{
 		UserID:              userID,
 		Message:             message,
 		ConversationHistory: history,
 		Context:             payloadContext,
+		Runtime:             runtime,
 	}
 }
 
 // saveChatInteraction persists the chat exchange (message + response) to database and cache.
 // Converts FunctionCalls to a map with JSON-encoded arguments for storage.
 // Non-blocking: designed to be called in a goroutine, logs errors without returning them.
-func (s *ChatService) saveChatInteraction(ctx context.Context, userID uint64, message, response string, tokensUsed int, functionCalls []dto.FunctionCall) {
+func (s *ChatService) saveChatInteraction(ctx context.Context, userID uint64, message, response string, tokensUsed int, functionCalls []outputport.FunctionCall) {
 	functionCallsMap := make(map[string]string)
 	for _, call := range functionCalls {
 		// Convert Args map to JSON string for storage

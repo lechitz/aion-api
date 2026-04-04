@@ -17,7 +17,7 @@ type chatServiceStub struct {
 	getContextFn func(context.Context, uint64) (*domain.ChatContext, error)
 }
 
-func (s *chatServiceStub) ProcessMessage(context.Context, uint64, string, map[string]interface{}) (*domain.ChatResult, error) {
+func (s *chatServiceStub) ProcessMessage(context.Context, uint64, string, map[string]interface{}, *domain.RuntimeSelection) (*domain.ChatResult, error) {
 	panic("unexpected ProcessMessage call")
 }
 

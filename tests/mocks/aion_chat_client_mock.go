@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	dto "github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
+	output "github.com/lechitz/aion-api/internal/chat/core/ports/output"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockAionChatClient) EXPECT() *MockAionChatClientMockRecorder {
 }
 
 // SendMessage mocks base method.
-func (m *MockAionChatClient) SendMessage(ctx context.Context, req *dto.InternalChatRequest) (*dto.InternalChatResponse, error) {
+func (m *MockAionChatClient) SendMessage(ctx context.Context, req *output.SendMessageRequest) (*output.SendMessageResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMessage", ctx, req)
-	ret0, _ := ret[0].(*dto.InternalChatResponse)
+	ret0, _ := ret[0].(*output.SendMessageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

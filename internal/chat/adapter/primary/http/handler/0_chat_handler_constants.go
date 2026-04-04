@@ -225,6 +225,10 @@ const (
 	FormFieldUserID = "user_id"
 	// FormFieldLanguage is the form field name for language.
 	FormFieldLanguage = "language"
+	// FormFieldProvider is the form field name for runtime provider override.
+	FormFieldProvider = "provider"
+	// FormFieldModel is the form field name for runtime model override.
+	FormFieldModel = "model"
 	// FormFieldMessage is the form field name for chat message.
 	FormFieldMessage = "message"
 )

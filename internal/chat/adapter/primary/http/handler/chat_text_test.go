@@ -10,22 +10,24 @@ import (
 
 	authdomain "github.com/lechitz/aion-api/internal/auth/core/domain"
 	authinput "github.com/lechitz/aion-api/internal/auth/core/ports/input"
+	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
 	handler "github.com/lechitz/aion-api/internal/chat/adapter/primary/http/handler"
 	"github.com/lechitz/aion-api/internal/chat/core/domain"
 	chatinput "github.com/lechitz/aion-api/internal/chat/core/ports/input"
 	"github.com/lechitz/aion-api/internal/platform/config"
 	"github.com/lechitz/aion-api/internal/platform/server/http/ports"
+	"github.com/lechitz/aion-api/internal/platform/server/http/utils/sharederrors"
 	"github.com/lechitz/aion-api/internal/shared/constants/ctxkeys"
 	"github.com/stretchr/testify/require"
 )
 
 type mockChatService struct {
-	processFn func(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}) (*domain.ChatResult, error)
+	processFn func(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error)
 }
 
-func (m mockChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}) (*domain.ChatResult, error) {
+func (m mockChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
 	if m.processFn != nil {
-		return m.processFn(ctx, userID, message, requestContext)
+		return m.processFn(ctx, userID, message, requestContext, runtime)
 	}
 	return &domain.ChatResult{}, nil
 }
@@ -137,10 +139,11 @@ func TestNewAndRegisterHTTP(t *testing.T) {
 
 func TestChatText_Success(t *testing.T) {
 	h := handler.New(mockChatService{
-		processFn: func(_ context.Context, userID uint64, message string, requestContext map[string]interface{}) (*domain.ChatResult, error) {
+		processFn: func(_ context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
 			require.Equal(t, uint64(7), userID)
 			require.Equal(t, "hello", message)
 			require.Equal(t, "v", requestContext["k"])
+			require.Nil(t, runtime)
 			return &domain.ChatResult{
 				Response:   "ok",
 				UI:         map[string]interface{}{"type": "simple"},
@@ -162,10 +165,36 @@ func TestChatText_Success(t *testing.T) {
 	require.Contains(t, rec.Body.String(), "\"sources\":[{")
 }
 
-func TestChatText_Errors(t *testing.T) {
-	h := handler.New(mockChatService{processFn: func(context.Context, uint64, string, map[string]interface{}) (*domain.ChatResult, error) {
-		return nil, errors.New("boom")
-	}}, &config.Config{}, mockLogger{})
+func TestChatText_Success_WithRuntimeSelection(t *testing.T) {
+	h := handler.New(mockChatService{
+		processFn: func(_ context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
+			require.Equal(t, uint64(7), userID)
+			require.Equal(t, "hello", message)
+			require.NotNil(t, runtime)
+			require.Equal(t, "openai", runtime.Provider)
+			require.Equal(t, "gpt-5.4-mini", runtime.Model)
+			require.Equal(t, "v", requestContext["k"])
+			return &domain.ChatResult{Response: "ok"}, nil
+		},
+	}, &config.Config{}, mockLogger{})
+
+	req := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodPost,
+		"/chat/text",
+		strings.NewReader(`{"message":"hello","context":{"k":"v"},"runtime":{"provider":"openai","model":"gpt-5.4-mini"}}`),
+	)
+	req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
+	rec := httptest.NewRecorder()
+
+	h.ChatText(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), "Chat processed successfully")
+}
+
+func TestChatText_AuthErrors(t *testing.T) {
+	h := handler.New(mockChatService{}, &config.Config{}, mockLogger{})
 
 	t.Run("missing user id", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello"}`))
@@ -181,6 +210,10 @@ func TestChatText_Errors(t *testing.T) {
 		h.ChatText(rec, req)
 		require.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
+}
+
+func TestChatText_RequestErrors(t *testing.T) {
+	h := handler.New(mockChatService{}, &config.Config{}, mockLogger{})
 
 	t.Run("invalid json", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":`))
@@ -198,6 +231,28 @@ func TestChatText_Errors(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, rec.Code)
 	})
 
+	t.Run("validation error runtime provider", func(t *testing.T) {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":" ","model":"gpt-5.4-mini"}}`))
+		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
+		rec := httptest.NewRecorder()
+		h.ChatText(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("validation error runtime model", func(t *testing.T) {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":"openai","model":" "}}`))
+		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
+		rec := httptest.NewRecorder()
+		h.ChatText(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestChatText_ServiceErrors(t *testing.T) {
+	h := handler.New(mockChatService{processFn: func(context.Context, uint64, string, map[string]interface{}, *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
+		return nil, errors.New("boom")
+	}}, &config.Config{}, mockLogger{})
+
 	t.Run("service error", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello"}`))
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
@@ -206,9 +261,26 @@ func TestChatText_Errors(t *testing.T) {
 		require.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 
+	t.Run("service validation error stays explicit", func(t *testing.T) {
+		validationHandler := handler.New(mockChatService{
+			processFn: func(context.Context, uint64, string, map[string]interface{}, *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
+				return nil, sharederrors.NewValidationError("runtime", "Invalid runtime provider 'invalid-provider'")
+			},
+		}, &config.Config{}, mockLogger{})
+
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":"invalid-provider","model":"x"}}`))
+		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
+		rec := httptest.NewRecorder()
+
+		validationHandler.ChatText(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+		require.Contains(t, rec.Body.String(), "validation error on runtime")
+		require.Contains(t, rec.Body.String(), "Invalid runtime provider")
+	})
+
 	t.Run("service canceled", func(t *testing.T) {
 		cancelHandler := handler.New(mockChatService{
-			processFn: func(context.Context, uint64, string, map[string]interface{}) (*domain.ChatResult, error) {
+			processFn: func(context.Context, uint64, string, map[string]interface{}, *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
 				return nil, context.Canceled
 			},
 		}, &config.Config{}, mockLogger{})
@@ -226,9 +298,10 @@ func TestChatText_Errors(t *testing.T) {
 func TestChatText_LogsUIActionMetadataWithConsent(t *testing.T) {
 	logger := &capturingLogger{}
 	h := handler.New(mockChatService{
-		processFn: func(_ context.Context, userID uint64, message string, _ map[string]interface{}) (*domain.ChatResult, error) {
+		processFn: func(_ context.Context, userID uint64, message string, _ map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
 			require.Equal(t, uint64(9), userID)
 			require.Equal(t, "confirmar", message)
+			require.Nil(t, runtime)
 			return &domain.ChatResult{Response: "ok"}, nil
 		},
 	}, &config.Config{}, logger)

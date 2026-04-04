@@ -10,9 +10,9 @@
 
 | Surface | Current contract |
 | --- | --- |
-| HTTP `POST /chat/text` | authenticated message send; returns assistant response, UI payload, sources, and optional usage |
+| HTTP `POST /chat/text` | authenticated message send; optional JSON `runtime { provider, model }`; returns assistant response, UI payload, sources, and optional usage |
 | HTTP `POST /chat/cancel` | authenticated cancel request; proxies cancellation to `AION_CHAT_URL/internal/cancel` |
-| HTTP `POST /chat/audio` | authenticated voice or chat ingestion path |
+| HTTP `POST /chat/audio` | authenticated voice/chat ingestion path; optional multipart `provider` + `model` override |
 | GraphQL read surface | context controllers expose chat history and aggregated chat context |
 
 There is no shared GraphQL mutation contract for chat in the current backend-owned public surface.
@@ -21,14 +21,18 @@ There is no shared GraphQL mutation contract for chat in the current backend-own
 
 1. Primary adapters authenticate the request and extract `userID`.
 2. `ProcessMessage` loads recent cached chat messages for context.
-3. The secondary HTTP adapter forwards the request to `aion-chat`.
-4. The usecase maps response text, UI payload, sources, and token usage into the local domain result.
-5. UI-action audit persistence is attempted best-effort through the `audit` bounded context.
-6. Chat history is saved asynchronously so request cancellation does not drop persistence work.
+3. The primary HTTP contract may carry runtime selection chosen by the authenticated chat UI:
+   - text path: optional JSON `runtime { provider, model }`
+   - audio path: optional multipart `provider` and `model`
+4. The secondary HTTP adapter forwards the selected runtime to `aion-chat`, preserving that request-scoped override when present.
+5. The usecase maps response text, UI payload, sources, and token usage into the local domain result.
+6. UI-action audit persistence is attempted best-effort through the `audit` bounded context.
+7. Chat history is saved asynchronously so request cancellation does not drop persistence work.
 
 ## Boundary Rules
 
 - provider-specific HTTP semantics stay in the secondary adapter
+- provider policy stays downstream in `aion-chat`; `aion-api` only validates that a present runtime block is structurally complete
 - audit persistence failures must not fail the main chat response path
 - UI-action metadata belongs to request context and transport contracts; business ownership of audit storage remains in `internal/audit`
 

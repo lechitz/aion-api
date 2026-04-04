@@ -15,6 +15,7 @@ import (
 	"strconv"
 
 	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
+	"github.com/lechitz/aion-api/internal/platform/server/http/utils/sharederrors"
 	"github.com/lechitz/aion-api/internal/shared/constants/commonkeys"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -116,10 +117,37 @@ func (c *AionChatClient) validateSendMessageResponse(ctx context.Context, span o
 		c.logger.WarnwCtx(ctx, MsgAionChatRequestCancelled, AttrStatusCode, statusCode, AttrBody, string(body))
 		return fmt.Errorf("%s: %w", ErrAionChatRequestFailed, context.Canceled)
 	}
+	if statusCode == http.StatusBadRequest {
+		span.SetStatus(codes.Error, ErrAionChatNonOK)
+		c.logger.ErrorwCtx(ctx, ErrAionChatNonOK, AttrStatusCode, statusCode, AttrBody, string(body))
+		return sharederrors.NewValidationError("runtime", extractAionChatErrorDetail(body))
+	}
 
 	span.SetStatus(codes.Error, ErrAionChatNonOK)
 	c.logger.ErrorwCtx(ctx, ErrAionChatNonOK, AttrStatusCode, statusCode, AttrBody, string(body))
 	return fmt.Errorf("%s: status %d: %s", ErrAionChatNonOK, statusCode, string(body))
+}
+
+func extractAionChatErrorDetail(body []byte) string {
+	var payload struct {
+		Detail any `json:"detail"`
+	}
+	if err := json.Unmarshal(body, &payload); err == nil {
+		switch detail := payload.Detail.(type) {
+		case string:
+			if detail != "" {
+				return detail
+			}
+		case map[string]any:
+			if errValue, ok := detail["error"].(string); ok && errValue != "" {
+				return errValue
+			}
+		}
+	}
+	if len(body) == 0 {
+		return ErrAionChatNonOK
+	}
+	return string(body)
 }
 
 func decodeSendMessageResponse(body []byte) (*dto.InternalChatResponse, error) {

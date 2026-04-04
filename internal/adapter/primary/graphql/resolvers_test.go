@@ -229,7 +229,7 @@ func (recordSvcStub) SuggestMetricDefinitions(context.Context, uint64, int) ([]r
 
 type chatSvcStub struct{}
 
-func (chatSvcStub) ProcessMessage(context.Context, uint64, string, map[string]interface{}) (*chatdomain.ChatResult, error) {
+func (chatSvcStub) ProcessMessage(context.Context, uint64, string, map[string]interface{}, *chatdomain.RuntimeSelection) (*chatdomain.ChatResult, error) {
 	return &chatdomain.ChatResult{}, nil
 }
 
