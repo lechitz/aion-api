@@ -17,6 +17,8 @@ definitions:
         maxLength: 2000
         minLength: 1
         type: string
+      runtime:
+        $ref: '#/definitions/dto.ChatRuntimeSelection'
     required:
     - message
     type: object
@@ -35,6 +37,15 @@ definitions:
         type: object
       usage:
         $ref: '#/definitions/dto.TokenUsage'
+    type: object
+  dto.ChatRuntimeSelection:
+    properties:
+      model:
+        example: gpt-5.4-mini
+        type: string
+      provider:
+        example: openai
+        type: string
     type: object
   dto.CreateUserRequest:
     properties:
@@ -781,6 +792,14 @@ paths:
       - description: Language code (pt, en, es) or auto-detect if empty
         in: formData
         name: language
+        type: string
+      - description: 'Optional runtime provider override (for example: openai, ollama)'
+        in: formData
+        name: provider
+        type: string
+      - description: Optional runtime model override when provider is present
+        in: formData
+        name: model
         type: string
       produces:
       - application/json

@@ -54,7 +54,7 @@ func TestProcessMessage_Success(t *testing.T) {
 		AnyTimes()
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -123,7 +123,7 @@ func TestProcessMessage_Success_WithConversationHistory(t *testing.T) {
 		AnyTimes()
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -168,7 +168,7 @@ func TestProcessMessage_Success_WithoutHistory_CacheError(t *testing.T) {
 		AnyTimes()
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert: Should succeed despite cache error (non-blocking)
 	require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestProcessMessage_AionChatClientError(t *testing.T) {
 	// No SaveChatHistory mocks needed (never reaches that point)
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert: Should propagate error
 	require.Error(t, err)
@@ -238,7 +238,7 @@ func TestProcessMessage_EmptyMessage(t *testing.T) {
 		AnyTimes()
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -283,7 +283,7 @@ func TestProcessMessage_WithMultipleFunctionCalls(t *testing.T) {
 		AnyTimes()
 
 	// Execute
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, nil)
 
 	// Assert
 	require.NoError(t, err)
@@ -291,6 +291,50 @@ func TestProcessMessage_WithMultipleFunctionCalls(t *testing.T) {
 	require.Len(t, result.FunctionCalls, 2)
 	require.Equal(t, TestFunctionGetWaterIntake, result.FunctionCalls[0])
 	require.Equal(t, TestFunctionSetReminder, result.FunctionCalls[1])
+
+	time.Sleep(10 * time.Millisecond)
+}
+
+func TestProcessMessage_ForwardsRuntimeSelection(t *testing.T) {
+	suite := setup.ChatServiceTest(t)
+	defer suite.Ctrl.Finish()
+
+	userID := uint64(334)
+	message := "use this runtime"
+	runtime := &domain.RuntimeSelection{
+		Provider: "openai",
+		Model:    "gpt-5.4-mini",
+	}
+
+	suite.HistoryCache.EXPECT().
+		GetLatest(gomock.Any(), userID, 6).
+		Return([]domain.ChatHistory{}, nil)
+
+	suite.AionChatClient.EXPECT().
+		SendMessage(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(_ context.Context, req *dto.InternalChatRequest) (*dto.InternalChatResponse, error) {
+			require.NotNil(t, req.Runtime)
+			require.Equal(t, runtime.Provider, req.Runtime.Provider)
+			require.Equal(t, runtime.Model, req.Runtime.Model)
+			return &dto.InternalChatResponse{
+				Response: "ok",
+			}, nil
+		})
+
+	suite.HistoryRepo.EXPECT().
+		Save(gomock.Any(), gomock.Any()).
+		Return(domain.ChatHistory{}, nil).
+		AnyTimes()
+	suite.HistoryCache.EXPECT().
+		Add(gomock.Any(), userID, gomock.Any()).
+		Return(nil).
+		AnyTimes()
+
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, message, nil, runtime)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, "ok", result.Response)
 
 	time.Sleep(10 * time.Millisecond)
 }
@@ -352,7 +396,7 @@ func TestProcessMessage_UIActionPersistsAuditEvent(t *testing.T) {
 	suite.HistoryRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(domain.ChatHistory{}, nil).AnyTimes()
 	suite.HistoryCache.EXPECT().Add(gomock.Any(), userID, gomock.Any()).Return(nil).AnyTimes()
 
-	result, err := suite.ChatService.ProcessMessage(ctx, userID, message, requestContext)
+	result, err := suite.ChatService.ProcessMessage(ctx, userID, message, requestContext, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 }
@@ -379,7 +423,7 @@ func TestProcessMessage_AuditFailureDoesNotFailBusinessFlow(t *testing.T) {
 	suite.HistoryRepo.EXPECT().Save(gomock.Any(), gomock.Any()).Return(domain.ChatHistory{}, nil).AnyTimes()
 	suite.HistoryCache.EXPECT().Add(gomock.Any(), userID, gomock.Any()).Return(nil).AnyTimes()
 
-	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, "cancel", requestContext)
+	result, err := suite.ChatService.ProcessMessage(suite.Ctx, userID, "cancel", requestContext, nil)
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, "ok", result.Response)

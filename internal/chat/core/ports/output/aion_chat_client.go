@@ -3,11 +3,9 @@ package output
 
 import (
 	"context"
-
-	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
 )
 
 // AionChatClient defines the interface for communicating with the Aion-Chat service (Python).
 type AionChatClient interface {
-	SendMessage(ctx context.Context, req *dto.InternalChatRequest) (*dto.InternalChatResponse, error)
+	SendMessage(ctx context.Context, req *SendMessageRequest) (*SendMessageResponse, error)
 }

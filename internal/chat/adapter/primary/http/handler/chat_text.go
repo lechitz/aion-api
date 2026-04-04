@@ -87,7 +87,7 @@ func (h *Handler) ChatText(w http.ResponseWriter, r *http.Request) {
 	h.Logger.InfowCtx(ctx, MsgChatRequestStart, commonkeys.UserID, strconv.FormatUint(userID, 10), AttrMessageLength, len(chatReq.Message))
 
 	span.AddEvent(EventCallService)
-	result, err := h.Service.ProcessMessage(ctx, userID, chatReq.Message, chatReq.Context)
+	result, err := h.Service.ProcessMessage(ctx, userID, chatReq.Message, chatReq.Context, chatReq.Runtime)
 	if err != nil {
 		if isClientCancelledError(err) {
 			span.AddEvent(EventChatCancelled)
@@ -99,6 +99,10 @@ func (h *Handler) ChatText(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		span.AddEvent(EventChatError)
+		if sharederrors.MapErrorToHTTPStatus(err) == http.StatusBadRequest {
+			httpresponse.WriteValidationErrorSpan(ctx, w, span, err, h.Logger)
+			return
+		}
 		httpresponse.WriteDomainErrorSpan(ctx, w, span, err, ErrChat, h.Logger)
 		return
 	}
@@ -146,6 +150,15 @@ func validateChatRequest(req dto.ChatRequest) error {
 
 	if len(msg) > MaxMessageLength {
 		return errors.New(ErrMessageTooLong)
+	}
+
+	if req.Runtime != nil {
+		if strings.TrimSpace(req.Runtime.Provider) == "" {
+			return errors.New("runtime.provider is required when runtime is present")
+		}
+		if strings.TrimSpace(req.Runtime.Model) == "" {
+			return errors.New("runtime.model is required when runtime is present")
+		}
 	}
 
 	return nil

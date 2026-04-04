@@ -5,15 +5,15 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/lechitz/aion-api/internal/chat/adapter/primary/http/dto"
 	"github.com/lechitz/aion-api/internal/chat/core/domain"
+	outputport "github.com/lechitz/aion-api/internal/chat/core/ports/output"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 )
 
 // ProcessMessage processes a chat message by forwarding it to the Aion-Chat service.
-func (s *ChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}) (*domain.ChatResult, error) {
+func (s *ChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *domain.RuntimeSelection) (*domain.ChatResult, error) {
 	tr := otel.Tracer(TracerName)
 	ctx, span := tr.Start(ctx, SpanProcessMessage)
 	defer span.End()
@@ -39,7 +39,7 @@ func (s *ChatService) ProcessMessage(ctx context.Context, userID uint64, message
 	conversationHistory := s.fetchConversationHistory(ctx, userID, historyLimit)
 
 	// Build request with conversation context
-	req := buildChatRequest(userID, message, conversationHistory, requestContext)
+	req := buildChatRequest(userID, message, conversationHistory, requestContext, runtime)
 
 	// Call external Aion-Chat service
 	resp, err := s.aionChatClient.SendMessage(ctx, req)
@@ -109,7 +109,7 @@ func convertSources(sources []map[string]interface{}) []interface{} {
 }
 
 // extractFunctionNames extracts function names from function calls.
-func extractFunctionNames(calls []dto.FunctionCall) []string {
+func extractFunctionNames(calls []outputport.FunctionCall) []string {
 	if calls == nil {
 		return nil
 	}

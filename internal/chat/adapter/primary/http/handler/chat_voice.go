@@ -32,6 +32,8 @@ import (
 // @Param        Authorization  header    string  true   "Bearer token"
 // @Param        audio          formData  file    true   "Audio file (webm, wav, mp3, max 10MB, max 60s)"
 // @Param        language       formData  string  false  "Language code (pt, en, es) or auto-detect if empty"
+// @Param        provider       formData  string  false  "Optional runtime provider override (for example: openai, ollama)"
+// @Param        model          formData  string  false  "Optional runtime model override when provider is present"
 // @Success      200            {object}  map[string]interface{}  "Voice chat response with transcription and AI response"
 // @Failure      400            {string}  string                  "Invalid audio file or validation error"
 // @Failure      401            {string}  string                  "Unauthorized - missing or invalid token"
@@ -54,7 +56,7 @@ func (h *Handler) ChatVoice(w http.ResponseWriter, r *http.Request) {
 		attribute.String(tracingkeys.RequestIPKey, r.RemoteAddr),
 	)
 
-	file, header, language, ok := h.parseVoiceRequest(ctx, w, r, span)
+	file, header, language, runtimeProvider, runtimeModel, ok := h.parseVoiceRequest(ctx, w, r, span)
 	if !ok {
 		return
 	}
@@ -74,7 +76,7 @@ func (h *Handler) ChatVoice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	span.AddEvent(EventForwardToAionChat)
-	buf, contentType, ok := h.buildMultipartRequest(ctx, w, span, file, header, userID, language)
+	buf, contentType, ok := h.buildMultipartRequest(ctx, w, span, file, header, userID, language, runtimeProvider, runtimeModel)
 	if !ok {
 		return
 	}
@@ -119,7 +121,7 @@ func (h *Handler) parseVoiceRequest(
 	w http.ResponseWriter,
 	r *http.Request,
 	span trace.Span,
-) (multipart.File, *multipart.FileHeader, string, bool) {
+) (multipart.File, *multipart.FileHeader, string, string, string, bool) {
 	span.AddEvent(EventParseMultipartForm)
 	r.Body = http.MaxBytesReader(w, r.Body, MaxAudioSize)
 	if err := r.ParseMultipartForm(MaxAudioSize); err != nil {
@@ -129,14 +131,14 @@ func (h *Handler) parseVoiceRequest(
 			httpresponse.WriteValidationErrorSpan(ctx, w, span,
 				sharederrors.NewValidationError(FormFieldAudio,
 					fmt.Sprintf("Audio file too large (max: %d bytes)", MaxAudioSize)), h.Logger)
-			return nil, nil, "", false
+			return nil, nil, "", "", "", false
 		}
 
 		span.SetStatus(codes.Error, ErrFailedParseMultipartForm)
 		h.Logger.ErrorwCtx(ctx, LogFailedParseMultipartForm, commonkeys.Error, err)
 		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
 			sharederrors.NewValidationError(FormFieldAudio, ErrInvalidMultipartForm), h.Logger)
-		return nil, nil, "", false
+		return nil, nil, "", "", "", false
 	}
 
 	file, header, err := r.FormFile(FormFieldAudio)
@@ -145,7 +147,7 @@ func (h *Handler) parseVoiceRequest(
 		h.Logger.ErrorwCtx(ctx, LogMissingAudioFile, commonkeys.Error, err)
 		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
 			sharederrors.NewValidationError(FormFieldAudio, ErrAudioFileRequired), h.Logger)
-		return nil, nil, "", false
+		return nil, nil, "", "", "", false
 	}
 
 	if header.Size > MaxAudioSize {
@@ -154,7 +156,7 @@ func (h *Handler) parseVoiceRequest(
 		httpresponse.WriteValidationErrorSpan(ctx, w, span,
 			sharederrors.NewValidationError(FormFieldAudio,
 				fmt.Sprintf("Audio file too large: %d bytes (max: %d)", header.Size, MaxAudioSize)), h.Logger)
-		return nil, nil, "", false
+		return nil, nil, "", "", "", false
 	}
 
 	language := ""
@@ -164,7 +166,17 @@ func (h *Handler) parseVoiceRequest(
 			language = languageValues[0]
 		}
 	}
-	return file, header, language, true
+
+	runtimeProvider, runtimeModel, err := extractRuntimeOverrideFromMultipart(r.MultipartForm)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		h.Logger.ErrorwCtx(ctx, err.Error())
+		httpresponse.WriteDecodeErrorSpan(ctx, w, span,
+			sharederrors.NewValidationError(FormFieldMessage, err.Error()), h.Logger)
+		return nil, nil, "", "", "", false
+	}
+
+	return file, header, language, runtimeProvider, runtimeModel, true
 }
 
 func isMultipartTooLargeError(err error) bool {
@@ -190,6 +202,8 @@ func (h *Handler) buildMultipartRequest(
 	header *multipart.FileHeader,
 	userID uint64,
 	language string,
+	runtimeProvider string,
+	runtimeModel string,
 ) (*bytes.Buffer, string, bool) {
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -225,6 +239,21 @@ func (h *Handler) buildMultipartRequest(
 		}
 	}
 
+	if runtimeProvider != "" {
+		if err := writer.WriteField(FormFieldProvider, runtimeProvider); err != nil {
+			span.SetStatus(codes.Error, ErrFailedWriteLanguageField)
+			h.Logger.ErrorwCtx(ctx, "failed to write provider field", commonkeys.Error, err)
+			httpresponse.WriteDomainErrorSpan(ctx, w, span, err, MsgFailedProcessAudio, h.Logger)
+			return nil, "", false
+		}
+		if err := writer.WriteField(FormFieldModel, runtimeModel); err != nil {
+			span.SetStatus(codes.Error, ErrFailedWriteLanguageField)
+			h.Logger.ErrorwCtx(ctx, "failed to write model field", commonkeys.Error, err)
+			httpresponse.WriteDomainErrorSpan(ctx, w, span, err, MsgFailedProcessAudio, h.Logger)
+			return nil, "", false
+		}
+	}
+
 	if err := writer.Close(); err != nil {
 		span.SetStatus(codes.Error, ErrFailedCloseMultipartWriter)
 		h.Logger.ErrorwCtx(ctx, LogFailedCloseMultipartWriter, commonkeys.Error, err)
@@ -233,6 +262,34 @@ func (h *Handler) buildMultipartRequest(
 	}
 
 	return &buf, writer.FormDataContentType(), true
+}
+
+func extractRuntimeOverrideFromMultipart(form *multipart.Form) (string, string, error) {
+	if form == nil {
+		return "", "", nil
+	}
+
+	var provider string
+	if values := form.Value[FormFieldProvider]; len(values) > 0 {
+		provider = strings.TrimSpace(values[0])
+	}
+
+	var model string
+	if values := form.Value[FormFieldModel]; len(values) > 0 {
+		model = strings.TrimSpace(values[0])
+	}
+
+	if provider == "" && model == "" {
+		return "", "", nil
+	}
+	if provider == "" {
+		return "", "", errors.New("runtime.provider is required when runtime is present")
+	}
+	if model == "" {
+		return "", "", errors.New("runtime.model is required when runtime is present")
+	}
+
+	return provider, model, nil
 }
 
 func (h *Handler) forwardToAionChat(

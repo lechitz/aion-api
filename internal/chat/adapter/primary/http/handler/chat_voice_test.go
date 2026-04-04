@@ -33,7 +33,7 @@ func newRestrictedChatServer(t *testing.T, fn http.HandlerFunc) *httptest.Server
 	return srv
 }
 
-func newVoiceRequest(t *testing.T, audio []byte, language string) *http.Request {
+func newVoiceRequest(t *testing.T, audio []byte, language string, provider string, model string) *http.Request {
 	t.Helper()
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -47,6 +47,12 @@ func newVoiceRequest(t *testing.T, audio []byte, language string) *http.Request 
 
 	if language != "" {
 		require.NoError(t, writer.WriteField("language", language))
+	}
+	if provider != "" {
+		require.NoError(t, writer.WriteField("provider", provider))
+	}
+	if model != "" {
+		require.NoError(t, writer.WriteField("model", model))
 	}
 
 	require.NoError(t, writer.Close())
@@ -71,6 +77,12 @@ func TestChatVoice_Success(t *testing.T) {
 		if r.FormValue("language") != "pt" {
 			t.Errorf("unexpected language: %s", r.FormValue("language"))
 		}
+		if r.FormValue("provider") != "openai" {
+			t.Errorf("unexpected provider: %s", r.FormValue("provider"))
+		}
+		if r.FormValue("model") != "gpt-4.1-mini" {
+			t.Errorf("unexpected model: %s", r.FormValue("model"))
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"message":"ok"}`))
@@ -80,7 +92,7 @@ func TestChatVoice_Success(t *testing.T) {
 		AionChat: config.AionChatConfig{BaseURL: chatSrv.URL},
 	}, mockLogger{})
 
-	req := newVoiceRequest(t, []byte("audio-bytes"), "pt")
+	req := newVoiceRequest(t, []byte("audio-bytes"), "pt", "openai", "gpt-4.1-mini")
 	req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
 	rec := httptest.NewRecorder()
 
@@ -97,14 +109,14 @@ func TestChatVoice_AuthErrors(t *testing.T) {
 	}, mockLogger{})
 
 	t.Run("missing user id", func(t *testing.T) {
-		req := newVoiceRequest(t, []byte("audio"), "")
+		req := newVoiceRequest(t, []byte("audio"), "", "", "")
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
 		require.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
 
 	t.Run("invalid user id type", func(t *testing.T) {
-		req := newVoiceRequest(t, []byte("audio"), "")
+		req := newVoiceRequest(t, []byte("audio"), "", "", "")
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, "7"))
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
@@ -118,7 +130,7 @@ func TestChatVoice_RequestValidation(t *testing.T) {
 	}, mockLogger{})
 
 	t.Run("missing audio file", func(t *testing.T) {
-		req := newVoiceRequest(t, nil, "pt")
+		req := newVoiceRequest(t, nil, "pt", "", "")
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
@@ -127,12 +139,30 @@ func TestChatVoice_RequestValidation(t *testing.T) {
 
 	t.Run("audio file too large", func(t *testing.T) {
 		tooLargeAudio := bytes.Repeat([]byte("a"), handler.MaxAudioSize+1)
-		req := newVoiceRequest(t, tooLargeAudio, "")
+		req := newVoiceRequest(t, tooLargeAudio, "", "", "")
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
 		require.Equal(t, http.StatusBadRequest, rec.Code)
 		require.Contains(t, rec.Body.String(), "too large")
+	})
+
+	t.Run("runtime provider required when model present", func(t *testing.T) {
+		req := newVoiceRequest(t, []byte("audio"), "", "", "gpt-4.1-mini")
+		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
+		rec := httptest.NewRecorder()
+		h.ChatVoice(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+		require.Contains(t, rec.Body.String(), "Invalid request body")
+	})
+
+	t.Run("runtime model required when provider present", func(t *testing.T) {
+		req := newVoiceRequest(t, []byte("audio"), "", "openai", "")
+		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
+		rec := httptest.NewRecorder()
+		h.ChatVoice(rec, req)
+		require.Equal(t, http.StatusBadRequest, rec.Code)
+		require.Contains(t, rec.Body.String(), "Invalid request body")
 	})
 }
 
@@ -142,7 +172,7 @@ func TestChatVoice_ForwardingErrorsAndServiceStatus(t *testing.T) {
 			AionChat: config.AionChatConfig{BaseURL: "://bad-url"},
 		}, mockLogger{})
 
-		req := newVoiceRequest(t, []byte("audio"), "")
+		req := newVoiceRequest(t, []byte("audio"), "", "", "")
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
@@ -159,7 +189,7 @@ func TestChatVoice_ForwardingErrorsAndServiceStatus(t *testing.T) {
 			AionChat: config.AionChatConfig{BaseURL: chatSrv.URL},
 		}, mockLogger{})
 
-		req := newVoiceRequest(t, []byte("audio"), "")
+		req := newVoiceRequest(t, []byte("audio"), "", "", "")
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(1)))
 		rec := httptest.NewRecorder()
 		h.ChatVoice(rec, req)
