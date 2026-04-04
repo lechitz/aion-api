@@ -193,10 +193,8 @@ func TestChatText_Success_WithRuntimeSelection(t *testing.T) {
 	require.Contains(t, rec.Body.String(), "Chat processed successfully")
 }
 
-func TestChatText_Errors(t *testing.T) {
-	h := handler.New(mockChatService{processFn: func(context.Context, uint64, string, map[string]interface{}, *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
-		return nil, errors.New("boom")
-	}}, &config.Config{}, mockLogger{})
+func TestChatText_AuthErrors(t *testing.T) {
+	h := handler.New(mockChatService{}, &config.Config{}, mockLogger{})
 
 	t.Run("missing user id", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello"}`))
@@ -212,6 +210,10 @@ func TestChatText_Errors(t *testing.T) {
 		h.ChatText(rec, req)
 		require.Equal(t, http.StatusUnauthorized, rec.Code)
 	})
+}
+
+func TestChatText_RequestErrors(t *testing.T) {
+	h := handler.New(mockChatService{}, &config.Config{}, mockLogger{})
 
 	t.Run("invalid json", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":`))
@@ -244,6 +246,12 @@ func TestChatText_Errors(t *testing.T) {
 		h.ChatText(rec, req)
 		require.Equal(t, http.StatusBadRequest, rec.Code)
 	})
+}
+
+func TestChatText_ServiceErrors(t *testing.T) {
+	h := handler.New(mockChatService{processFn: func(context.Context, uint64, string, map[string]interface{}, *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
+		return nil, errors.New("boom")
+	}}, &config.Config{}, mockLogger{})
 
 	t.Run("service error", func(t *testing.T) {
 		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello"}`))
