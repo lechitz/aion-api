@@ -13,7 +13,7 @@ import (
 )
 
 // ListByTag returns records filtered by tag for the authenticated user.
-func (s *Service) ListByTag(ctx context.Context, tagID uint64, userID uint64, limit int) ([]domain.Record, error) {
+func (s *Service) ListByTag(ctx context.Context, tagID uint64, userID uint64, limit int, afterEventTime *string, afterID *int64) ([]domain.Record, error) {
 	tr := otel.Tracer(TracerName)
 	ctx, span := tr.Start(ctx, SpanListByTag)
 	defer span.End()
@@ -30,7 +30,7 @@ func (s *Service) ListByTag(ctx context.Context, tagID uint64, userID uint64, li
 	}
 
 	span.AddEvent(EventRepositoryList)
-	records, err := s.RecordRepository.ListByTag(ctx, tagID, userID, limit)
+	records, err := s.RecordRepository.ListByTag(ctx, tagID, userID, limit, afterEventTime, afterID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, FailedToListRecords)
@@ -51,4 +51,34 @@ func (s *Service) ListByTag(ctx context.Context, tagID uint64, userID uint64, li
 	)
 
 	return records, nil
+}
+
+// CountByTag returns the number of active records for a tag and user.
+func (s *Service) CountByTag(ctx context.Context, tagID uint64, userID uint64) (int64, error) {
+	tr := otel.Tracer(TracerName)
+	ctx, span := tr.Start(ctx, "record.usecase.CountByTag")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String(commonkeys.Operation, "record.usecase.CountByTag"),
+		attribute.String(commonkeys.UserID, strconv.FormatUint(userID, 10)),
+		attribute.String(commonkeys.TagID, strconv.FormatUint(tagID, 10)),
+	)
+
+	count, err := s.RecordRepository.CountByTag(ctx, tagID, userID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, FailedToListRecords)
+		s.Logger.ErrorwCtx(ctx, "failed to count records by tag",
+			commonkeys.TagID, tagID,
+			commonkeys.UserID, userID,
+			commonkeys.Error, err,
+		)
+		return 0, fmt.Errorf("failed to count records by tag: %w", err)
+	}
+
+	span.SetAttributes(attribute.Int64("count", count))
+	span.AddEvent(EventSuccess)
+	span.SetStatus(codes.Ok, StatusListedAll)
+	return count, nil
 }

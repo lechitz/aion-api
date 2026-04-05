@@ -19,7 +19,8 @@ type recordServiceStub struct {
 	getProjectedByIDFn      func(context.Context, uint64, uint64) (domain.RecordProjection, error)
 	listByUserFn            func(context.Context, uint64, int, *string, *int64) ([]domain.Record, error)
 	listProjectedPageFn     func(context.Context, uint64, int, *string, *int64) ([]domain.RecordProjection, error)
-	listByTagFn             func(context.Context, uint64, uint64, int) ([]domain.Record, error)
+	listByTagFn             func(context.Context, uint64, uint64, int, *string, *int64) ([]domain.Record, error)
+	countByTagFn            func(context.Context, uint64, uint64) (int64, error)
 	listByCatFn             func(context.Context, uint64, uint64, int) ([]domain.Record, error)
 	listByDayFn             func(context.Context, uint64, time.Time) ([]domain.Record, error)
 	listAllUntilFn          func(context.Context, uint64, time.Time, int) ([]domain.Record, error)
@@ -93,11 +94,18 @@ func (s *recordServiceStub) ListProjectedPage(ctx context.Context, userID uint64
 	return s.listProjectedPageFn(ctx, userID, limit, afterEventTime, afterID)
 }
 
-func (s *recordServiceStub) ListByTag(ctx context.Context, tagID uint64, userID uint64, limit int) ([]domain.Record, error) {
+func (s *recordServiceStub) ListByTag(ctx context.Context, tagID uint64, userID uint64, limit int, afterEventTime *string, afterID *int64) ([]domain.Record, error) {
 	if s.listByTagFn == nil {
 		panic("unexpected ListByTag call")
 	}
-	return s.listByTagFn(ctx, tagID, userID, limit)
+	return s.listByTagFn(ctx, tagID, userID, limit, afterEventTime, afterID)
+}
+
+func (s *recordServiceStub) CountByTag(ctx context.Context, tagID uint64, userID uint64) (int64, error) {
+	if s.countByTagFn == nil {
+		panic("unexpected CountByTag call")
+	}
+	return s.countByTagFn(ctx, tagID, userID)
 }
 
 func (s *recordServiceStub) ListByCategory(ctx context.Context, categoryID uint64, userID uint64, limit int) ([]domain.Record, error) {

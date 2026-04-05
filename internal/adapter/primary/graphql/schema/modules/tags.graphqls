@@ -7,6 +7,7 @@ type Tag {
     categoryId: ID!
     description: String
     icon: String # single emoji
+    recordCount: Int!
     createdAt: String!      # ISO8601 timestamp
     updatedAt: String!      # ISO8601 timestamp
 }

@@ -13,7 +13,7 @@ import (
 )
 
 // ListByTag fetches all Records for a specific tag for the authenticated user.
-func (h *controller) ListByTag(ctx context.Context, tagID, userID uint64, limit int) ([]*gmodel.Record, error) {
+func (h *controller) ListByTag(ctx context.Context, tagID, userID uint64, limit int, afterEventTime *string, afterID *int64) ([]*gmodel.Record, error) {
 	tr := otel.Tracer(TracerName)
 	ctx, span := tr.Start(ctx, SpanListByTag)
 	defer span.End()
@@ -37,7 +37,7 @@ func (h *controller) ListByTag(ctx context.Context, tagID, userID uint64, limit 
 		return nil, ErrTagIDCannotBeZero
 	}
 
-	records, err := h.RecordService.ListByTag(ctx, tagID, userID, limit)
+	records, err := h.RecordService.ListByTag(ctx, tagID, userID, limit, afterEventTime, afterID)
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, MsgListByTagError)
@@ -53,6 +53,43 @@ func (h *controller) ListByTag(ctx context.Context, tagID, userID uint64, limit 
 	span.SetAttributes(attribute.Int(AttrCount, len(out)))
 	span.SetStatus(codes.Ok, StatusFetched)
 	return out, nil
+}
+
+// CountByTag returns the number of active records for a specific tag for the authenticated user.
+func (h *controller) CountByTag(ctx context.Context, tagID, userID uint64) (int64, error) {
+	tr := otel.Tracer(TracerName)
+	ctx, span := tr.Start(ctx, "record.graphql.CountByTag")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String(commonkeys.Operation, "record.graphql.CountByTag"),
+		attribute.String(commonkeys.UserID, strconv.FormatUint(userID, 10)),
+		attribute.String(commonkeys.TagID, strconv.FormatUint(tagID, 10)),
+	)
+
+	if userID == 0 {
+		span.SetStatus(codes.Error, ErrUserIDNotFound.Error())
+		h.Logger.ErrorwCtx(ctx, ErrUserIDNotFound.Error(), commonkeys.UserID, userID)
+		return 0, ErrUserIDNotFound
+	}
+
+	if tagID == 0 {
+		span.SetStatus(codes.Error, ErrTagIDCannotBeZero.Error())
+		h.Logger.ErrorwCtx(ctx, ErrTagIDCannotBeZero.Error(), commonkeys.TagID, tagID)
+		return 0, ErrTagIDCannotBeZero
+	}
+
+	count, err := h.RecordService.CountByTag(ctx, tagID, userID)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "failed to count records by tag")
+		h.Logger.ErrorwCtx(ctx, "failed to count records by tag", commonkeys.Error, err.Error(), commonkeys.TagID, tagID, commonkeys.UserID, userID)
+		return 0, err
+	}
+
+	span.SetAttributes(attribute.Int64(AttrCount, count))
+	span.SetStatus(codes.Ok, StatusFetched)
+	return count, nil
 }
 
 // ListByCategory fetches all Records for a specific category for the authenticated user.

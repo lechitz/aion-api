@@ -127,8 +127,12 @@ func (recordSvcStub) ListProjectedPage(context.Context, uint64, int, *string, *i
 	return []recorddomain.RecordProjection{}, nil
 }
 
-func (recordSvcStub) ListByTag(context.Context, uint64, uint64, int) ([]recorddomain.Record, error) {
+func (recordSvcStub) ListByTag(context.Context, uint64, uint64, int, *string, *int64) ([]recorddomain.Record, error) {
 	return []recorddomain.Record{}, nil
+}
+
+func (recordSvcStub) CountByTag(context.Context, uint64, uint64) (int64, error) {
+	return 0, nil
 }
 
 func (recordSvcStub) ListByCategory(context.Context, uint64, uint64, int) ([]recorddomain.Record, error) {
@@ -414,7 +418,7 @@ func TestRecordResolvers_SuccessPaths(t *testing.T) {
 	require.NoError(t, err)
 	_, err = q.RecordByID(ctx, "1")
 	require.NoError(t, err)
-	_, err = q.RecordsByTag(ctx, "1", &limit)
+	_, err = q.RecordsByTag(ctx, "1", &limit, nil, nil)
 	require.NoError(t, err)
 	_, err = q.RecordsByDay(ctx, &date)
 	require.NoError(t, err)
@@ -455,7 +459,7 @@ func TestRecordResolvers_ParseErrors(t *testing.T) {
 
 	_, err := q.RecordByID(ctx, bad)
 	require.Error(t, err)
-	_, err = q.RecordsByTag(ctx, bad, nil)
+	_, err = q.RecordsByTag(ctx, bad, nil, nil, nil)
 	require.Error(t, err)
 	_, err = q.RecordsByCategory(ctx, bad, nil)
 	require.Error(t, err)

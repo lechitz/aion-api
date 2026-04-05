@@ -344,6 +344,7 @@ type Tag struct {
 	CategoryID  string  `json:"categoryId"`
 	Description *string `json:"description,omitempty"`
 	Icon        *string `json:"icon,omitempty"`
+	RecordCount int32   `json:"recordCount"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
 }

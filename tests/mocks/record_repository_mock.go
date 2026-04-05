@@ -42,6 +42,21 @@ func (m *MockRecordRepository) EXPECT() *MockRecordRepositoryMockRecorder {
 	return m.recorder
 }
 
+// CountByTag mocks base method.
+func (m *MockRecordRepository) CountByTag(ctx context.Context, tagID, userID uint64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountByTag", ctx, tagID, userID)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountByTag indicates an expected call of CountByTag.
+func (mr *MockRecordRepositoryMockRecorder) CountByTag(ctx, tagID, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountByTag", reflect.TypeOf((*MockRecordRepository)(nil).CountByTag), ctx, tagID, userID)
+}
+
 // CountLargeWidgetsInView mocks base method.
 func (m *MockRecordRepository) CountLargeWidgetsInView(ctx context.Context, userID, viewID uint64, excludeWidgetID *uint64) (int64, error) {
 	m.ctrl.T.Helper()
@@ -263,18 +278,18 @@ func (mr *MockRecordRepositoryMockRecorder) ListByDay(ctx, userID, date any) *go
 }
 
 // ListByTag mocks base method.
-func (m *MockRecordRepository) ListByTag(ctx context.Context, tagID, userID uint64, limit int) ([]domain.Record, error) {
+func (m *MockRecordRepository) ListByTag(ctx context.Context, tagID, userID uint64, limit int, afterEventTime *string, afterID *int64) ([]domain.Record, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListByTag", ctx, tagID, userID, limit)
+	ret := m.ctrl.Call(m, "ListByTag", ctx, tagID, userID, limit, afterEventTime, afterID)
 	ret0, _ := ret[0].([]domain.Record)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListByTag indicates an expected call of ListByTag.
-func (mr *MockRecordRepositoryMockRecorder) ListByTag(ctx, tagID, userID, limit any) *gomock.Call {
+func (mr *MockRecordRepositoryMockRecorder) ListByTag(ctx, tagID, userID, limit, afterEventTime, afterID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTag", reflect.TypeOf((*MockRecordRepository)(nil).ListByTag), ctx, tagID, userID, limit)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByTag", reflect.TypeOf((*MockRecordRepository)(nil).ListByTag), ctx, tagID, userID, limit, afterEventTime, afterID)
 }
 
 // ListByUser mocks base method.

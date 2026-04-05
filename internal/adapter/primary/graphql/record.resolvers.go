@@ -37,7 +37,7 @@ func (q *queryResolver) RecordProjectionByID(ctx context.Context, id string) (*m
 }
 
 // RecordsByTag is the resolver for the recordsByTag field.
-func (q *queryResolver) RecordsByTag(ctx context.Context, tagID string, limit *int32) ([]*model.Record, error) {
+func (q *queryResolver) RecordsByTag(ctx context.Context, tagID string, limit *int32, afterEventTime *string, afterID *string) ([]*model.Record, error) {
 	tid, err := strconv.ParseUint(tagID, 10, 64)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,14 @@ func (q *queryResolver) RecordsByTag(ctx context.Context, tagID string, limit *i
 		lim = int(*limit)
 	}
 
-	return q.RecordController().ListByTag(ctx, tid, uid, lim)
+	var afterIDInt *int64
+	if afterID != nil && *afterID != "" {
+		if v, err := strconv.ParseInt(*afterID, 10, 64); err == nil {
+			afterIDInt = &v
+		}
+	}
+
+	return q.RecordController().ListByTag(ctx, tid, uid, lim, afterEventTime, afterIDInt)
 }
 
 // RecordsByDay is the resolver for the recordsByDay field.
