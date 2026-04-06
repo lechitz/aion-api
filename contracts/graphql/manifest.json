@@ -41,7 +41,7 @@
     {"type":"query","name":"RecordsByCategory","rootField":"recordsByCategory","path":"contracts/graphql/queries/records/by-category.graphql","sha256":"615c29e1f0e17030df598518ece22bfd5a08939c9274cb9daabf3f1a660bb928"},
     {"type":"query","name":"RecordsByDay","rootField":"recordsByDay","path":"contracts/graphql/queries/records/by-day.graphql","sha256":"62c1cb652424129e935d8e414ebc713fe8ef5f4a9bd0b1784a96a2692d602429"},
     {"type":"query","name":"RecordById","rootField":"recordById","path":"contracts/graphql/queries/records/by-id.graphql","sha256":"73813b8b233db3397b7140bf3950a39a210ebf2db2be810610f170c66e1f5d68"},
-    {"type":"query","name":"RecordsByTag","rootField":"recordsByTag","path":"contracts/graphql/queries/records/by-tag.graphql","sha256":"2ed0d26dc8a66ed71af1c53d6c14638a536b5acedae5de49cedaeac1ffe69585"},
+    {"type":"query","name":"RecordsByTag","rootField":"recordsByTag","path":"contracts/graphql/queries/records/by-tag.graphql","sha256":"f01659f57adb7ed98de28643f3c8236295b125a30025e679f6259979dc1e065a"},
     {"type":"query","name":"RecordsLatest","rootField":"recordsLatest","path":"contracts/graphql/queries/records/latest.graphql","sha256":"bffbdca866581883147cc6e3d864eb8fe74a0c6dd2a6ae74b2a39bc824fffc5e"},
     {"type":"query","name":"ListRecords","rootField":"records","path":"contracts/graphql/queries/records/list.graphql","sha256":"e104b5393dfeadad93ff732b89847dc012384ac59d4f39f12b56f90d49269f9f"},
     {"type":"query","name":"RecordProjectionById","rootField":"recordProjectionById","path":"contracts/graphql/queries/records/projection-by-id.graphql","sha256":"b4070c0b435eb32d2561b77e1fc3876275e5ce4e36ebbc4d6231e53bd3ae4602"},
