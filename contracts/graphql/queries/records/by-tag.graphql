@@ -1,1 +1,1 @@
-query RecordsByTag($tagId: ID!, $limit: Int, $afterEventTime: String, $afterId: ID) { recordsByTag(tagId: $tagId, limit: $limit, afterEventTime: $afterEventTime, afterId: $afterId) { id userId tagId description eventTime recordedAt durationSeconds value source timezone status createdAt updatedAt } }
+query RecordsByTag($tagId: ID!, $limit: Int) { recordsByTag(tagId: $tagId, limit: $limit) { id userId tagId description eventTime recordedAt durationSeconds value source timezone status createdAt updatedAt } }
