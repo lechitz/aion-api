@@ -3,75 +3,182 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [ main, feature/** ]
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
-permissions:
-  contents: read
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
-  build-test:
+  contracts:
+    name: Contracts
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           check-latest: true
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-gomod-
 
-      - name: Cache Go build
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-gobin-${{ hashFiles('makefiles/tooling.mk') }}
+
+      - name: Install tools
+        run: make -f makefiles/tooling.mk tools-install
+
+      - name: Add GOPATH/bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Swagger — generate and check drift
+        run: make docs.gen docs.check-dirty
+
+      - name: GraphQL — generate, validate and check drift
+        run: make graphql.queries graphql.manifest graphql.validate graphql.check-dirty
+
+      - name: Markdown links
+        run: ./.github/scripts/check_md_links.sh
+
+      - name: Upload swagger artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: swagger
+          path: |
+            contracts/openapi/swagger.json
+            contracts/openapi/swagger.yaml
+
+  lint:
+    name: Lint
+    needs: contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
+
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
+          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gobuild-
 
-      - name: Generate Swagger docs
-        run: make docs.gen
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/golangci-lint
+          key: ${{ runner.os }}-golangci-${{ hashFiles('.golangci.yml', '**/go.sum') }}
+          restore-keys: ${{ runner.os }}-golangci-
 
-      - name: Check Swagger docs drift
-        run: make docs.check-dirty
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-gobin-${{ hashFiles('makefiles/tooling.mk') }}
 
-      - name: Generate GraphQL contracts and manifest
-        run: make graphql.queries graphql.manifest
+      - name: Install tools
+        run: make -f makefiles/tooling.mk tools-install
 
-      - name: Validate GraphQL contracts against schema
-        run: make graphql.validate
+      - name: Add GOPATH/bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
-      - name: Check GraphQL contracts drift
-        run: make graphql.check-dirty
+      - name: Lint
+        run: make lint
+
+      - name: Field alignment
+        run: make fieldalignment
+
+      - name: Vet
+        run: make govet
+
+  test:
+    name: Test
+    needs: contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gobuild-
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-gobin-${{ hashFiles('makefiles/tooling.mk') }}
+
+      - name: Install tools
+        run: make -f makefiles/tooling.mk tools-install
+
+      - name: Add GOPATH/bin to PATH
+        run: echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Run tests
+        run: gotestsum --junitfile tests/coverage/junit-report.xml -- -race ./...
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-report
+          path: tests/coverage/junit-report.xml
+
+  build:
+    name: Build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-gobuild-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gobuild-
 
       - name: Build
         run: go build ./...
-
-      - name: Test
-        run: go test ./... -race -count=1
-
-      - name: Upload swagger.json
-        uses: actions/upload-artifact@v4
-        with:
-          name: swagger-json
-          path: contracts/openapi/swagger.json
-
-      - name: Upload swagger.yaml
-        uses: actions/upload-artifact@v4
-        with:
-          name: swagger-yaml
-          path: contracts/openapi/swagger.yaml
