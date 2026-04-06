@@ -10,7 +10,13 @@ import (
 // ChatService defines the interface for chat operations (use cases).
 type ChatService interface {
 	// ProcessMessage sends a message to the AI and returns the response.
-	ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *domain.RuntimeSelection) (*domain.ChatResult, error)
+	ProcessMessage(
+		ctx context.Context,
+		userID uint64,
+		message string,
+		requestContext map[string]interface{},
+		runtime *domain.RuntimeSelection,
+	) (*domain.ChatResult, error)
 
 	// SaveChatHistory persists a chat interaction to the database.
 	SaveChatHistory(ctx context.Context, userID uint64, message, response string, tokensUsed int, functionCalls map[string]string) error

@@ -13,7 +13,13 @@ import (
 )
 
 // ProcessMessage processes a chat message by forwarding it to the Aion-Chat service.
-func (s *ChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *domain.RuntimeSelection) (*domain.ChatResult, error) {
+func (s *ChatService) ProcessMessage(
+	ctx context.Context,
+	userID uint64,
+	message string,
+	requestContext map[string]interface{},
+	runtime *domain.RuntimeSelection,
+) (*domain.ChatResult, error) {
 	tr := otel.Tracer(TracerName)
 	ctx, span := tr.Start(ctx, SpanProcessMessage)
 	defer span.End()

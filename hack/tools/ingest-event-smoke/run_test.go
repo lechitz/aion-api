@@ -22,4 +22,3 @@ func TestBuildPayloadVariesByNonce(t *testing.T) {
 		t.Fatalf("expected payloads to differ when nonce source time differs")
 	}
 }
-
