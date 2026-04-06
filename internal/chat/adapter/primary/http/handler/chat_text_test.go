@@ -25,7 +25,13 @@ type mockChatService struct {
 	processFn func(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error)
 }
 
-func (m mockChatService) ProcessMessage(ctx context.Context, userID uint64, message string, requestContext map[string]interface{}, runtime *dto.ChatRuntimeSelection) (*domain.ChatResult, error) {
+func (m mockChatService) ProcessMessage(
+	ctx context.Context,
+	userID uint64,
+	message string,
+	requestContext map[string]interface{},
+	runtime *dto.ChatRuntimeSelection,
+) (*domain.ChatResult, error) {
 	if m.processFn != nil {
 		return m.processFn(ctx, userID, message, requestContext, runtime)
 	}
@@ -232,7 +238,12 @@ func TestChatText_RequestErrors(t *testing.T) {
 	})
 
 	t.Run("validation error runtime provider", func(t *testing.T) {
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":" ","model":"gpt-5.4-mini"}}`))
+		req := httptest.NewRequestWithContext(
+			t.Context(),
+			http.MethodPost,
+			"/chat/text",
+			strings.NewReader(`{"message":"hello","runtime":{"provider":" ","model":"gpt-5.4-mini"}}`),
+		)
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
 		rec := httptest.NewRecorder()
 		h.ChatText(rec, req)
@@ -240,7 +251,12 @@ func TestChatText_RequestErrors(t *testing.T) {
 	})
 
 	t.Run("validation error runtime model", func(t *testing.T) {
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":"openai","model":" "}}`))
+		req := httptest.NewRequestWithContext(
+			t.Context(),
+			http.MethodPost,
+			"/chat/text",
+			strings.NewReader(`{"message":"hello","runtime":{"provider":"openai","model":" "}}`),
+		)
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
 		rec := httptest.NewRecorder()
 		h.ChatText(rec, req)
@@ -268,7 +284,12 @@ func TestChatText_ServiceErrors(t *testing.T) {
 			},
 		}, &config.Config{}, mockLogger{})
 
-		req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/chat/text", strings.NewReader(`{"message":"hello","runtime":{"provider":"invalid-provider","model":"x"}}`))
+		req := httptest.NewRequestWithContext(
+			t.Context(),
+			http.MethodPost,
+			"/chat/text",
+			strings.NewReader(`{"message":"hello","runtime":{"provider":"invalid-provider","model":"x"}}`),
+		)
 		req = req.WithContext(context.WithValue(t.Context(), ctxkeys.UserID, uint64(7)))
 		rec := httptest.NewRecorder()
 

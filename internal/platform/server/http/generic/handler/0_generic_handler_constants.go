@@ -7,7 +7,7 @@ import (
 
 // Tracer names for OpenTelemetry generic handler operations.
 const (
-	TracerGenericHandler     = "aion-api.generic.handler"  // Main tracer for generic handler
+	TracerGenericHandler     = "aion-api.generic.handler" // Main tracer for generic handler
 	TracerHealthCheckHandler = "generic.health_check"     // Span name for health check
 	TracerErrorHandler       = "generic.error_handler"    // Span name for internal error handler
 	TracerRecoveryHandler    = "generic.recovery_handler" // Span name for recovery from panic

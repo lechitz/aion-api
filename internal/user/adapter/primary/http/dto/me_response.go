@@ -9,7 +9,7 @@ type UserMeResponse struct {
 	Name                string    `json:"name"                 example:"Alice Doe"`
 	Username            string    `json:"username"             example:"alice"`
 	Email               string    `json:"email"                example:"alice@example.com"`
-	CreatedAt           time.Time `json:"created_at"         example:"2024-01-02T15:04:05Z"`
+	CreatedAt           time.Time `json:"created_at"           example:"2024-01-02T15:04:05Z"`
 	Locale              *string   `json:"locale,omitempty"     example:"en-US"`
 	Timezone            *string   `json:"timezone,omitempty"   example:"America/Sao_Paulo"`
 	Location            *string   `json:"location,omitempty"   example:"São Paulo, BR"`
