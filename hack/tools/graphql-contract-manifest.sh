@@ -36,7 +36,7 @@ while IFS= read -r abs_file; do
 
   checksum="$(sha256sum "${abs_file}" | awk '{print $1}')"
   printf '%s\t%s\t%s\t%s\t%s\n' "${kind}" "${operation_name}" "${root_field}" "${rel_file}" "${checksum}" >> "${TMP_ENTRIES}"
-done < <(find "${CONTRACTS_DIR}/queries" "${CONTRACTS_DIR}/mutations" -type f -name '*.graphql' | sort)
+done < <(find "${CONTRACTS_DIR}/queries" "${CONTRACTS_DIR}/mutations" -type f -name '*.graphql' | LC_ALL=C sort)
 
 {
   printf '{\n'
