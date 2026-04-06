@@ -91,6 +91,10 @@ graphql.check-dirty:
 	untracked=$$(git ls-files --others --exclude-standard -- "$(QUERIES_DIR)" "$(MUTATIONS_DIR)" "$(MANIFEST_OUT)" | grep -E '(\.graphql$$|manifest\.json$$)' || true); \
 	if [ $$tracked_diff -ne 0 ] || [ -n "$$untracked" ]; then \
 		echo "GraphQL contracts out-of-date. Run 'make graphql.queries graphql.manifest'."; \
+		echo "--- tracked diff ---"; \
+		git diff --stat -- ':(glob)contracts/graphql/queries/**/*.graphql' ':(glob)contracts/graphql/mutations/**/*.graphql' "$(MANIFEST_OUT)" || true; \
+		echo "--- untracked ---"; \
+		echo "$$untracked"; \
 		exit 1; \
 	fi
 
