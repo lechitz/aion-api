@@ -92,7 +92,7 @@ graphql.check-dirty:
 	if [ $$tracked_diff -ne 0 ] || [ -n "$$untracked" ]; then \
 		echo "GraphQL contracts out-of-date. Run 'make graphql.queries graphql.manifest'."; \
 		echo "--- tracked diff ---"; \
-		git diff --stat -- ':(glob)contracts/graphql/queries/**/*.graphql' ':(glob)contracts/graphql/mutations/**/*.graphql' "$(MANIFEST_OUT)" || true; \
+		git diff -- ':(glob)contracts/graphql/queries/**/*.graphql' ':(glob)contracts/graphql/mutations/**/*.graphql' "$(MANIFEST_OUT)" || true; \
 		echo "--- untracked ---"; \
 		echo "$$untracked"; \
 		exit 1; \
