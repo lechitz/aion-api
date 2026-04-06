@@ -68,6 +68,9 @@ build-dev:
 			aion-ingest \
 			aion-streams \
 			aion-streams-worker
+	@echo "[BUILD-DEV] Cleaning up dangling images from this build..."
+	@docker image prune -f > /dev/null 2>&1 || true
+	@echo "[BUILD-DEV] Done."
 
 dev-up: dev-down
 	@echo "[DEV-UP] Starting DEV environment..."
@@ -167,6 +170,9 @@ rebuild-dev: build-dev
 	@echo "   make ollama-status         → Check Ollama status and models"
 	@echo "   make ollama-down           → Stop Ollama (models preserved)"
 	@echo "   make docker-prune-dangling → Clean temp images (run weekly)"
+	@echo ""
+	@echo "[REBUILD-DEV] Cleaning up dangling images from this build..."
+	@docker image prune -f > /dev/null 2>&1 || true
 
 dev-fast:
 	@echo "[DEV-FAST] Starting services WITHOUT rebuilding images..."

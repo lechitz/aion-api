@@ -43,10 +43,10 @@ func TestService_ListByTag_LimitBounds(t *testing.T) {
 			defer suite.Ctrl.Finish()
 
 			suite.RecordRepository.EXPECT().
-				ListByTag(gomock.Any(), tagID, userID, tt.expectedLim).
+				ListByTag(gomock.Any(), tagID, userID, tt.expectedLim, nil, nil).
 				Return(records, nil)
 
-			result, err := suite.RecordService.ListByTag(suite.Ctx, tagID, userID, tt.limit)
+			result, err := suite.RecordService.ListByTag(suite.Ctx, tagID, userID, tt.limit, nil, nil)
 			require.NoError(t, err)
 			assert.Equal(t, records, result)
 		})

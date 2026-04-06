@@ -407,7 +407,7 @@ extend type Query {
     recordProjections(limit: Int, afterEventTime: String, afterId: ID): [RecordProjection!]! @auth(roles: "user")
     recordsLatest(limit: Int): [Record!]! @auth(roles: "user")
     recordProjectionsLatest(limit: Int): [RecordProjection!]! @auth(roles: "user")
-    recordsByTag(tagId: ID!, limit: Int): [Record!]! @auth(roles: "user")
+    recordsByTag(tagId: ID!, limit: Int, afterEventTime: String, afterId: ID): [Record!]! @auth(roles: "user")
     recordsByCategory(categoryId: ID!, limit: Int): [Record!]! @auth(roles: "user")
     recordsByDay(date: String): [Record!]! @auth(roles: "user")
     recordsUntil(until: String!, limit: Int): [Record!]! @auth(roles: "user")
@@ -448,6 +448,7 @@ type Tag {
     categoryId: ID!
     description: String
     icon: String # single emoji
+    recordCount: Int!
     createdAt: String!      # ISO8601 timestamp
     updatedAt: String!      # ISO8601 timestamp
 }

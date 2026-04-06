@@ -46,6 +46,19 @@ make event-backbone-gate
 These commands are not microbenchmarks. They validate system behavior at the boundaries where latency and pipeline health matter most today.
 The realtime load target is intentionally preconfigured with a smaller request profile than the synchronous scenarios because it measures the full async chain from record creation through outbox, Kafka, projection, and SSE delivery.
 
+## Docker Build Targets (`docker.mk`)
+
+Key targets that affect local disk usage and build performance:
+
+| Target | What it does |
+| --- | --- |
+| `build-dev` | builds all service images via Docker Compose, then runs `docker image prune -f` to remove dangling images automatically |
+| `rebuild-dev` | forces a clean rebuild of all images, then runs `docker image prune -f` before resuming the stack |
+
+**Why it matters:** before the auto-prune step, repeated `make build-dev` or `make rebuild-dev` calls would accumulate tens of gigabytes of dangling images over iterative development sessions. The automatic cleanup keeps disk usage stable without requiring manual `docker system prune` runs.
+
+If `docker image prune` is too aggressive for your local setup, scope the cleanup manually with `docker image prune --filter "until=24h"`.
+
 ## Boundary Rules
 
 - keep the root `Makefile` thin; logic belongs in modules

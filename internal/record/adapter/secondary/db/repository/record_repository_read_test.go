@@ -94,9 +94,25 @@ func TestRecordReadFilterQueries(t *testing.T) {
 			return dbMock
 		})
 		dbMock.EXPECT().Error().Return(nil)
-		got, err := repo.ListByTag(t.Context(), rec.TagID, rec.UserID, 3)
+		got, err := repo.ListByTag(t.Context(), rec.TagID, rec.UserID, 3, nil, nil)
 		require.NoError(t, err)
 		require.Len(t, got, 1)
+	})
+
+	t.Run("count by tag success", func(t *testing.T) {
+		dbMock.EXPECT().WithContext(gomock.Any()).Return(dbMock)
+		dbMock.EXPECT().Model(gomock.Any()).Return(dbMock)
+		dbMock.EXPECT().Where(gomock.Any(), gomock.Any(), gomock.Any()).Return(dbMock)
+		dbMock.EXPECT().Count(gomock.Any()).DoAndReturn(func(dest any) db.DB {
+			value, ok := dest.(*int64)
+			require.True(t, ok)
+			*value = 10
+			return dbMock
+		})
+		dbMock.EXPECT().Error().Return(nil)
+		got, err := repo.CountByTag(t.Context(), rec.TagID, rec.UserID)
+		require.NoError(t, err)
+		require.EqualValues(t, 10, got)
 	})
 
 	t.Run("list by category and range variants", func(t *testing.T) {

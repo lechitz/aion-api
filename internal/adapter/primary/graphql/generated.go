@@ -281,7 +281,7 @@ type ComplexityRoot struct {
 		RecordsBetween           func(childComplexity int, startDate string, endDate string, limit *int32) int
 		RecordsByCategory        func(childComplexity int, categoryID string, limit *int32) int
 		RecordsByDay             func(childComplexity int, date *string) int
-		RecordsByTag             func(childComplexity int, tagID string, limit *int32) int
+		RecordsByTag             func(childComplexity int, tagID string, limit *int32, afterEventTime *string, afterID *string) int
 		RecordsLatest            func(childComplexity int, limit *int32) int
 		RecordsUntil             func(childComplexity int, until string, limit *int32) int
 		SearchRecords            func(childComplexity int, filters model.SearchFilters) int
@@ -353,6 +353,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Icon        func(childComplexity int) int
 		Name        func(childComplexity int) int
+		RecordCount func(childComplexity int) int
 		UpdatedAt   func(childComplexity int) int
 		UserID      func(childComplexity int) int
 	}
@@ -412,7 +413,7 @@ type QueryResolver interface {
 	RecordProjections(ctx context.Context, limit *int32, afterEventTime *string, afterID *string) ([]*model.RecordProjection, error)
 	RecordsLatest(ctx context.Context, limit *int32) ([]*model.Record, error)
 	RecordProjectionsLatest(ctx context.Context, limit *int32) ([]*model.RecordProjection, error)
-	RecordsByTag(ctx context.Context, tagID string, limit *int32) ([]*model.Record, error)
+	RecordsByTag(ctx context.Context, tagID string, limit *int32, afterEventTime *string, afterID *string) ([]*model.Record, error)
 	RecordsByCategory(ctx context.Context, categoryID string, limit *int32) ([]*model.Record, error)
 	RecordsByDay(ctx context.Context, date *string) ([]*model.Record, error)
 	RecordsUntil(ctx context.Context, until string, limit *int32) ([]*model.Record, error)
@@ -1652,7 +1653,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Query.RecordsByTag(childComplexity, args["tagId"].(string), args["limit"].(*int32)), true
+		return e.complexity.Query.RecordsByTag(childComplexity, args["tagId"].(string), args["limit"].(*int32), args["afterEventTime"].(*string), args["afterId"].(*string)), true
 	case "Query.recordsLatest":
 		if e.complexity.Query.RecordsLatest == nil {
 			break
@@ -2046,6 +2047,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Tag.Name(childComplexity), true
+	case "Tag.recordCount":
+		if e.complexity.Tag.RecordCount == nil {
+			break
+		}
+
+		return e.complexity.Tag.RecordCount(childComplexity), true
 	case "Tag.updatedAt":
 		if e.complexity.Tag.UpdatedAt == nil {
 			break
@@ -2794,6 +2801,16 @@ func (ec *executionContext) field_Query_recordsByTag_args(ctx context.Context, r
 		return nil, err
 	}
 	args["limit"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "afterEventTime", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["afterEventTime"] = arg2
+	arg3, err := graphql.ProcessArgField(ctx, rawArgs, "afterId", ec.unmarshalOID2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["afterId"] = arg3
 	return args, nil
 }
 
@@ -3637,6 +3654,8 @@ func (ec *executionContext) fieldContext_ChatDataPack_tags(_ context.Context, fi
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -7961,6 +7980,8 @@ func (ec *executionContext) fieldContext_Mutation_createTag(ctx context.Context,
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -8038,6 +8059,8 @@ func (ec *executionContext) fieldContext_Mutation_updateTag(ctx context.Context,
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -9148,7 +9171,7 @@ func (ec *executionContext) _Query_recordsByTag(ctx context.Context, field graph
 		ec.fieldContext_Query_recordsByTag,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.resolvers.Query().RecordsByTag(ctx, fc.Args["tagId"].(string), fc.Args["limit"].(*int32))
+			return ec.resolvers.Query().RecordsByTag(ctx, fc.Args["tagId"].(string), fc.Args["limit"].(*int32), fc.Args["afterEventTime"].(*string), fc.Args["afterId"].(*string))
 		},
 		func(ctx context.Context, next graphql.Resolver) graphql.Resolver {
 			directive0 := next
@@ -10352,6 +10375,8 @@ func (ec *executionContext) fieldContext_Query_tagByName(ctx context.Context, fi
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -10429,6 +10454,8 @@ func (ec *executionContext) fieldContext_Query_tagById(ctx context.Context, fiel
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -10505,6 +10532,8 @@ func (ec *executionContext) fieldContext_Query_tags(_ context.Context, field gra
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -10571,6 +10600,8 @@ func (ec *executionContext) fieldContext_Query_tagsByCategoryId(ctx context.Cont
 				return ec.fieldContext_Tag_description(ctx, field)
 			case "icon":
 				return ec.fieldContext_Tag_icon(ctx, field)
+			case "recordCount":
+				return ec.fieldContext_Tag_recordCount(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Tag_createdAt(ctx, field)
 			case "updatedAt":
@@ -12209,6 +12240,35 @@ func (ec *executionContext) fieldContext_Tag_icon(_ context.Context, field graph
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Tag_recordCount(ctx context.Context, field graphql.CollectedField, obj *model.Tag) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Tag_recordCount,
+		func(ctx context.Context) (any, error) {
+			return obj.RecordCount, nil
+		},
+		nil,
+		ec.marshalNInt2int32,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Tag_recordCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -17582,6 +17642,11 @@ func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Tag_description(ctx, field, obj)
 		case "icon":
 			out.Values[i] = ec._Tag_icon(ctx, field, obj)
+		case "recordCount":
+			out.Values[i] = ec._Tag_recordCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createdAt":
 			out.Values[i] = ec._Tag_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
