@@ -18,15 +18,16 @@ import (
 // Dependencies exposes application services that primary adapters (HTTP/GraphQL) consume.
 // This is the contract between the application layer and presentation layer.
 type Dependencies struct {
-	AuthService     inputAuth.AuthService
-	UserService     inputUser.UserService
-	AdminService    inputAdmin.AdminService
-	CategoryService inputCategory.CategoryService
-	TagService      inputTag.TagService
-	RecordService   inputRecord.RecordService
-	ChatService     inputChat.ChatService
-	AuditService    inputAudit.Service
-	OutboxService   inputEventOutbox.Service
-	RealtimeService inputRealtime.Service
-	Logger          logger.ContextLogger
+	AuthService            inputAuth.AuthService
+	UserService            inputUser.UserService
+	UserPreferencesService inputUser.UserPreferencesService
+	AdminService           inputAdmin.AdminService
+	CategoryService        inputCategory.CategoryService
+	TagService             inputTag.TagService
+	RecordService          inputRecord.RecordService
+	ChatService            inputChat.ChatService
+	AuditService           inputAudit.Service
+	OutboxService          inputEventOutbox.Service
+	RealtimeService        inputRealtime.Service
+	Logger                 logger.ContextLogger
 }

@@ -4,7 +4,7 @@
 # All seeds use *_generate.sql (dynamic, parametrizable via N=count)
 # Usage: make seed-all N=10 | make populate N=100 | make seed-caller N=5
 # ============================================================
-.PHONY: seed-users seed-categories seed-all seed-tags seed-records seed-roles seed-user-roles seed-admin seed-user1-all seed-everybody seed-clean-users seed-clean-categories seed-clean-tags seed-clean-records seed-clean-roles seed-clean-user-roles seed-clean-registration-sessions seed-clean-all seed-helper seed-setup seed-quick seed-api-caller seed-api-caller-bootstrap seed-api-caller-clean seed-caller populate reset-user-data seed-test-timeline seed-clean-test-timeline seed-essential db-full db-reset
+.PHONY: seed-users seed-categories seed-all seed-tags seed-records seed-roles seed-user-roles seed-admin seed-user1-all seed-everybody seed-clean-users seed-clean-categories seed-clean-tags seed-clean-records seed-clean-roles seed-clean-user-roles seed-clean-registration-sessions seed-clean-all seed-helper seed-setup seed-quick seed-api-caller seed-api-caller-bootstrap seed-api-caller-clean seed-caller populate reset-user-data seed-test-timeline seed-clean-test-timeline seed-essential seed-my-essential db-full db-reset
 
 POSTGRES_CONTAINER := aion-dev-postgres
 POSTGRES_USER := aion
@@ -301,6 +301,14 @@ seed-clean-test:
 # Seed only essential data (roles + admin user)
 seed-essential: seed-roles seed-admin
 	@echo "✅ Essential data seeded (roles + admin)"
+
+seed-my-essential:
+	@echo "📋 Seeding essential MY data without touching user-entered records..."
+	@$(MAKE) seed-essential \
+		POSTGRES_CONTAINER=$(MY_POSTGRES_CONTAINER) \
+		POSTGRES_USER=$(MY_POSTGRES_USER) \
+		POSTGRES_DB=$(MY_POSTGRES_DB)
+	@echo "✅ MY essential data checked/applied"
 
 # Full database setup: migrations + essential + test profile + cache flush
 db-full: migrate-dev-reset seed-essential seed-test cache-reset

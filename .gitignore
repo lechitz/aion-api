@@ -60,6 +60,7 @@ scripts/
 
 # Local caches
 /.cache/
+backups/
 
 # Air hot-reload temporary directory
 tmp/

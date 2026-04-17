@@ -139,7 +139,11 @@ func registerDomainRoutes(v1 ports.Router, cfg *config.Config, deps *app.Depende
 
 	if deps.UserService != nil {
 		uh := userhandler.New(deps.UserService, cfg, log)
-		userhandler.RegisterHTTP(v1, uh, deps.AuthService, log)
+		var ph *userhandler.PreferencesHandler
+		if deps.UserPreferencesService != nil {
+			ph = userhandler.NewPreferencesHandler(deps.UserPreferencesService, cfg, log)
+		}
+		userhandler.RegisterHTTP(v1, uh, ph, deps.AuthService, log)
 	}
 
 	if deps.AdminService != nil {
