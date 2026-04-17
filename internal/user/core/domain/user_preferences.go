@@ -14,23 +14,24 @@ type UserPreferences struct {
 	ReducedMotion   bool              // Whether animations are reduced
 }
 
-// AllowedThemePresets defines valid preset names.
-var AllowedThemePresets = map[string]bool{
-	"default":   true,
-	"midnight":  true,
-	"warm-gray": true,
-	"ocean":     true,
-	"frost":     true,
-	"ember":     true,
-	"charcoal":  true,
-	"custom":    true,
+// IsAllowedThemePreset reports whether a preset name is accepted by the UI contract.
+func IsAllowedThemePreset(value string) bool {
+	switch value {
+	case "default", "midnight", "warm-gray", "ocean", "frost", "ember", "charcoal", "custom":
+		return true
+	default:
+		return false
+	}
 }
 
-// AllowedThemeModes defines valid theme mode values.
-var AllowedThemeModes = map[string]bool{
-	"system": true,
-	"light":  true,
-	"dark":   true,
+// IsAllowedThemeMode reports whether a theme mode is accepted by the UI contract.
+func IsAllowedThemeMode(value string) bool {
+	switch value {
+	case "system", "light", "dark":
+		return true
+	default:
+		return false
+	}
 }
 
 // DefaultUserPreferences returns the default preferences for a user.

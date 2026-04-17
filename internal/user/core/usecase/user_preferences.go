@@ -59,13 +59,13 @@ func (s *PreferencesService) SavePreferences(ctx context.Context, userID uint64,
 
 	s.logger.InfowCtx(ctx, "saving user preferences", commonkeys.UserID, userID)
 
-	if cmd.ThemePreset != "" && !domain.AllowedThemePresets[cmd.ThemePreset] {
+	if cmd.ThemePreset != "" && !domain.IsAllowedThemePreset(cmd.ThemePreset) {
 		err := sharederrors.NewValidationError("theme_preset", "invalid theme preset")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		return domain.UserPreferences{}, err
 	}
-	if cmd.ThemeMode != "" && !domain.AllowedThemeModes[cmd.ThemeMode] {
+	if cmd.ThemeMode != "" && !domain.IsAllowedThemeMode(cmd.ThemeMode) {
 		err := sharederrors.NewValidationError("theme_mode", "invalid theme mode")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

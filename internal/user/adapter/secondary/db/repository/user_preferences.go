@@ -28,7 +28,6 @@ func (up UserRepository) GetPreferencesByUserID(ctx context.Context, userID uint
 	err := up.db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		First(&prefDB).Error()
-
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			span.SetStatus(codes.Ok, "preferences_not_found_returning_defaults")
@@ -68,7 +67,6 @@ func (up UserRepository) UpsertPreferences(ctx context.Context, prefs domain.Use
 		     RETURNING user_id, theme_preset, theme_mode, compact_mode, reduced_motion, custom_overrides, created_at, updated_at`,
 			prefs.UserID, prefDB.ThemePreset, prefDB.ThemeMode, prefDB.CompactMode, prefDB.ReducedMotion, prefDB.CustomOverrides, now, now).
 		Scan(&prefDB).Error()
-
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
