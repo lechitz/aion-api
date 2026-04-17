@@ -369,20 +369,15 @@ build-my:
 	@echo "[BUILD-MY] Building MY image..."
 	DOCKER_BUILDKIT=1 docker build --progress=plain --build-arg BUILD_LDFLAGS="" -f infrastructure/docker/Dockerfile -t $(APPLICATION_NAME):my .
 
-my-up: my-down
-	@echo "[MY-UP] Starting MY personal environment..."
-	export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) rm -f -v postgres-my
-	export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) up
+my-up: my
 
 my-down:
 	@echo "[MY-DOWN] Stopping MY environment (preserving volumes)..."
 	@echo "      ℹ️  Ollama will be kept RUNNING (models preserved)"
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && \
-		docker compose -f $(COMPOSE_FILE_MY) stop aion-api aion-chat aion-web postgres-my redis-aion-my localstack-my jaeger otel-collector prometheus-my grafana-my loki fluent-bit 2>/dev/null || true
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && \
-		docker compose -f $(COMPOSE_FILE_MY) rm -f aion-api aion-chat aion-web postgres-my redis-aion-my localstack-my jaeger otel-collector prometheus-my grafana-my loki fluent-bit 2>/dev/null || true
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) stop aion-api aion-chat aion-web postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit 2>/dev/null || true
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) rm -f aion-api aion-chat aion-web postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit 2>/dev/null || true
 	@echo ""
-	@if docker ps --filter "name=ollama-my" --filter "status=running" -q | grep -q .; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "✅ Services stopped (Ollama still running)"; \
 		echo ""; \
 		echo "💡 Ollama is still RUNNING to preserve models"; \
@@ -400,7 +395,7 @@ my:
 	@echo ""
 	@echo "This will:"
 	@echo "  ✓ Build aion-api:my, aion-chat:dev, aion-web:dev"
-	@echo "  ✓ Start ALL services (postgres-my, redis-my, etc.)"
+	@echo "  ✓ Start MY services (aion-my-postgres, aion-my-redis, etc.)"
 	@echo "  ✓ Use SEPARATE database (aion-api_my)"
 	@echo "  ✓ Share Ollama with dev environment (saves resources)"
 	@echo "  ✓ Enable hot-reload for all projects"
@@ -417,13 +412,29 @@ my:
 		exit 1; \
 	fi
 	@echo "✅ aion-dev-ollama is running"
+	@conflicts="$$(docker ps --format '{{.Names}}' | grep -E '^(aion-dev-api|aion-dev-web|aion-dev-chat|aion-dev-postgres|aion-dev-redis|aion-dev-localstack|aion-dev-jaeger|aion-dev-prometheus|aion-dev-grafana|aion-dev-loki|aion-dev-fluent-bit)$$' || true)"; \
+	if [ -n "$$conflicts" ]; then \
+		echo ""; \
+		echo "❌ DEV services are running on ports used by MY:"; \
+		echo "$$conflicts"; \
+		echo ""; \
+		echo "Run 'make dev-down' before starting MY. Ollama can stay running."; \
+		exit 1; \
+	fi
 	@echo ""
 	@echo "⏳ Building aion-api:my..."
 	@DOCKER_BUILDKIT=1 docker build --progress=plain --build-arg BUILD_LDFLAGS="" -f infrastructure/docker/Dockerfile -t $(APPLICATION_NAME):my . || { echo "❌ Build failed"; exit 1; }
 	@echo ""
-	@echo "⏳ Starting services..."
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) build
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) up -d
+	@echo "⏳ Building MY services..."
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) build
+	@echo ""
+	@echo "⏳ Starting MY dependencies..."
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) up -d postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit aion-chat
+	@$(MAKE) migrate-my-up
+	@$(MAKE) seed-my-essential
+	@echo ""
+	@echo "⏳ Starting MY application services..."
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) up -d aion-api aion-web
 	@echo ""
 	@echo "✅ Personal environment started!"
 	@echo ""
@@ -437,7 +448,7 @@ my:
 	@echo "   • Ollama:        http://localhost:11434 (shared with dev)"
 	@echo "   • Jaeger UI:     http://localhost:16686"
 	@echo "   • Prometheus:    http://localhost:9090"
-	@echo "   • Grafana:       http://localhost:3001"
+	@echo "   • Grafana:       http://localhost:3000"
 	@echo ""
 	@echo "📋 Logs: make logs-all"
 	@echo "⏹️  Stop:  make my-down"
@@ -459,9 +470,23 @@ my-fast:
 		exit 1; \
 	fi
 	@echo "✅ aion-dev-ollama is running"
+	@conflicts="$$(docker ps --format '{{.Names}}' | grep -E '^(aion-dev-api|aion-dev-web|aion-dev-chat|aion-dev-postgres|aion-dev-redis|aion-dev-localstack|aion-dev-jaeger|aion-dev-prometheus|aion-dev-grafana|aion-dev-loki|aion-dev-fluent-bit)$$' || true)"; \
+	if [ -n "$$conflicts" ]; then \
+		echo ""; \
+		echo "❌ DEV services are running on ports used by MY:"; \
+		echo "$$conflicts"; \
+		echo ""; \
+		echo "Run 'make dev-down' before starting MY. Ollama can stay running."; \
+		exit 1; \
+	fi
 	@echo ""
-	@echo "⏳ Starting services (using existing images)..."
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && docker compose -f $(COMPOSE_FILE_MY) up -d
+	@echo "⏳ Starting MY dependencies (using existing images)..."
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) up -d postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit aion-chat
+	@$(MAKE) migrate-my-up
+	@$(MAKE) seed-my-essential
+	@echo ""
+	@echo "⏳ Starting MY application services..."
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) up -d aion-api aion-web
 	@echo ""
 	@echo "✅ Personal environment started!"
 	@echo ""
@@ -478,10 +503,14 @@ my-fast:
 my-clean: clean-my
 
 clean-my:
+	@if [ "$(CONFIRM_CLEAN_MY)" != "YES" ]; then \
+		echo "❌ clean-my removes the durable MY database. Re-run with CONFIRM_CLEAN_MY=YES only if this is intentional."; \
+		exit 1; \
+	fi
 	@echo "[CLEAN-MY] Cleaning MY containers, volumes, images..."
 	@echo "      ⚠️  This will remove:"
 	@echo "         • PostgreSQL data (aion-api_my)"
-	@echo "         • Redis cache (redis-my)"
+	@echo "         • Redis cache (aion-my-redis)"
 	@echo "         • Localstack assets"
 	@echo "         • aion-api:my image"
 	@echo "         • aion-chat:dev image"
@@ -490,10 +519,8 @@ clean-my:
 	@echo "      ℹ️  Ollama will be kept RUNNING (models preserved)"
 	@echo ""
 	@echo "→ Stopping and removing services (except Ollama)..."
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && \
-		docker compose -f $(COMPOSE_FILE_MY) stop aion-api aion-chat aion-web postgres-my redis-aion-my localstack-my jaeger otel-collector prometheus-my grafana-my loki fluent-bit 2>/dev/null || true
-	@export $$(cat $(ENV_FILE_MY) | grep -v '^#' | xargs) && \
-		docker compose -f $(COMPOSE_FILE_MY) rm -f -v aion-api aion-chat aion-web postgres-my redis-aion-my localstack-my jaeger otel-collector prometheus-my grafana-my loki fluent-bit 2>/dev/null || true
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) stop aion-api aion-chat aion-web postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit 2>/dev/null || true
+	@docker compose --env-file $(ENV_FILE_MY) -f $(COMPOSE_FILE_MY) rm -f -v aion-api aion-chat aion-web postgres redis localstack jaeger otel-collector prometheus grafana loki fluent-bit 2>/dev/null || true
 	@echo "→ Removing my images..."
 	@docker images --filter "reference=$(APPLICATION_NAME):my" -q | xargs -r docker rmi -f || true
 	@docker images --filter "reference=aion-chat:dev" -q | xargs -r docker rmi -f || true
@@ -505,7 +532,7 @@ clean-my:
 	@docker volume ls -q | grep -E '(^|[-_])fluentbit-data$$' | xargs -r docker volume rm -f || true
 	@docker volume ls -q | grep -E '(^|[-_])localstack-data$$' | xargs -r docker volume rm -f || true
 	@echo ""
-	@if docker ps --filter "name=ollama-my" --filter "status=running" -q | grep -q .; then \
+	@if docker ps --filter "name=aion-dev-ollama" --filter "status=running" -q | grep -q .; then \
 		echo "✅ Cleanup complete (Ollama still running)"; \
 		echo ""; \
 		echo "💡 Ollama is still RUNNING to preserve models (~4-5GB)"; \

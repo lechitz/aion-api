@@ -10,7 +10,13 @@ import (
 )
 
 // RegisterHTTP registers the user-related HTTP handlers with the provided router.
-func RegisterHTTP(r ports.Router, h *Handler, authService authinput.AuthService, lg logger.ContextLogger) {
+func RegisterHTTP(
+	r ports.Router,
+	h *Handler,
+	ph *PreferencesHandler,
+	authService authinput.AuthService,
+	lg logger.ContextLogger,
+) {
 	r.Group("/user", func(ur ports.Router) {
 		// Public
 		ur.POST("/create", http.HandlerFunc(h.Create))
@@ -27,6 +33,10 @@ func RegisterHTTP(r ports.Router, h *Handler, authService authinput.AuthService,
 				pr.DELETE("/avatar", http.HandlerFunc(h.DeleteAvatar))
 				pr.PUT("/password", http.HandlerFunc(h.UpdateUserPassword))
 				pr.DELETE("/", http.HandlerFunc(h.SoftDeleteUser))
+				if ph != nil {
+					pr.GET("/preferences", http.HandlerFunc(ph.GetPreferences))
+					pr.PUT("/preferences", http.HandlerFunc(ph.SavePreferences))
+				}
 			})
 		}
 	})

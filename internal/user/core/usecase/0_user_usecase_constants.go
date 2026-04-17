@@ -46,6 +46,12 @@ const (
 
 	// SpanUploadAvatar is the span name for uploading/processing avatar images.
 	SpanUploadAvatar = "user.upload_avatar"
+
+	// SpanGetPreferences is the span name for reading user preferences.
+	SpanGetPreferences = "user.preferences.get"
+
+	// SpanSavePreferences is the span name for saving user preferences.
+	SpanSavePreferences = "user.preferences.save"
 )
 
 // -----------------------------------------------------------------------------

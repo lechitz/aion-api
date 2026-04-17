@@ -21,8 +21,10 @@
 
 - `GET /user/all`
 - `GET /user/me`
+- `GET /user/preferences`
 - `GET /user/{user_id}`
 - `PUT /user/`
+- `PUT /user/preferences`
 - `DELETE /user/avatar`
 - `PUT /user/password`
 - `DELETE /user/`
@@ -30,6 +32,7 @@
 ## Runtime Contract
 
 - password updates refresh the auth cookie or token on success
+- appearance preferences are cached locally by the dashboard and can be rehydrated from `/user/preferences`, including preset selection and custom CSS overrides
 - cache layers must never store password hashes or raw passwords
 - registration is a multi-step public flow separate from the authenticated profile-update surface
 - avatar upload and removal is owned here even when backed by external object storage

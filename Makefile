@@ -11,6 +11,12 @@ ENV_FILE_MY       := infrastructure/docker/environments/my/.env.my
 COMPOSE_FILE_PROD := infrastructure/docker/environments/prod/docker-compose-prod.yaml
 ENV_FILE_PROD     := infrastructure/docker/environments/prod/.env.prod
 
+MY_POSTGRES_CONTAINER ?= aion-my-postgres
+MY_POSTGRES_USER      ?= aion
+MY_POSTGRES_DB        ?= aion-api_my
+MY_MIGRATION_DB       ?= postgres://aion:aion123@localhost:5432/aion-api_my?sslmode=disable
+MY_BACKUP_DIR         ?= ../backups/aion-api/my
+
 COVERAGE_DIR = tests/coverage
 
 # --- MIGRATION CONFIG ---
@@ -44,16 +50,16 @@ help:
 	@echo ""
 	@echo "  - [MY - Personal Environment (Isolated DB)]"
 	@echo ""
-	@echo "     my                       →  Build ALL images + start FULL STACK (Personal Environment)"
+	@echo "     my                       →  Build + start Personal MY stack"
 	@echo "                                  • Separate PostgreSQL database (aion-api_my)"
-	@echo "                                  • Separate Redis instance (redis-aion-my)"
+	@echo "                                  • Separate Redis instance (aion-my-redis)"
 	@echo "                                  • Shares Ollama with dev (saves ~5GB+ per model)"
 	@echo "                                  • ⚠️  Requires aion-dev-ollama running (make ollama-up)"
 	@echo "                                  • 🔥 HOT RELOAD enabled for all projects"
 	@echo "                                  • Config in: infrastructure/docker/environments/my/"
 	@echo "     my-fast                  →  Start Personal stack without rebuilding"
 	@echo "     my-down                  →  Stop Personal services (preserves volumes)"
-	@echo "     clean-my                 →  ⚠️ Remove Personal containers/volumes/images"
+	@echo "     clean-my                 →  ⚠️ Remove Personal containers/volumes/images (requires CONFIRM_CLEAN_MY=YES)"
 	@echo ""
 	@echo "  - [DEV - Docker Full Stack]"
 	@echo ""
@@ -170,6 +176,16 @@ help:
 	@echo "     migrate-dev-down         →  Rollback last migration on dev DB"
 	@echo "     migrate-dev-status       →  Show current migration version"
 	@echo "     migrate-dev-reset        →  ⚠️ Drop all and re-apply migrations"
+	@echo "     migrate-my-up            →  Apply migrations to personal MY DB without resetting data"
+	@echo "     migrate-my-status        →  Show current migration version for personal MY DB"
+	@echo ""
+	@echo ""
+	@echo " 🔶 ┃ BACKUP / RESTORE ┃"
+	@echo ""
+	@echo "     backup-dev               →  Create a local custom-format backup in ../backups/aion-api/dev/"
+	@echo "     backup-my                →  Create a local custom-format backup in ../backups/aion-api/my/"
+	@echo "     restore-dev              →  Restore a backup with CONFIRM_RESTORE=YES BACKUP_FILE=..."
+	@echo "     restore-my               →  Restore MY backup with CONFIRM_RESTORE=YES BACKUP_FILE=..."
 	@echo ""
 	@echo ""
 	@echo " 🔶 ┃ SEEDS ┃"
@@ -282,7 +298,8 @@ install-tools: tools-install
 	regression-gate-draft e2e-draft-smoke dc15-correlate \
 	mcp-smoke mcp-smoke-readonly \
 	migrate-up migrate-down migrate-force migrate-new migrate-install \
-	migrate-dev-up migrate-dev-down migrate-dev-status migrate-dev-reset \
+	migrate-dev-up migrate-dev-down migrate-dev-status migrate-dev-reset migrate-my-up migrate-my-status \
+	backup-dev restore-dev backup-my restore-my \
 	docs.gen docs.check-dirty docs.clean docs.validate docs-verify
 
 docs-serve:

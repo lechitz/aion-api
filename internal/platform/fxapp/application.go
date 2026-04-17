@@ -99,6 +99,7 @@ func ProvideAppDependencies(deps appDepsParams) *AppDependencies {
 
 	authService := auth.NewService(adminRepository, authCacheStore, userRepository, userCacheStore, authCacheStore, tokenProvider, hasherProvider, deps.Log)
 	userService := user.NewService(userRepository, userRepository, userCacheStore, avatarStorage, authCacheStore, tokenProvider, hasherProvider, deps.Log)
+	userPreferencesService := user.NewPreferencesService(userRepository, deps.Log)
 	adminService := admin.NewService(adminRepository, authCacheStore, authCacheStore, deps.Log)
 	categoryService := category.NewService(categoryRepository, categoryCacheStore, deps.Log)
 	tagService := tag.NewService(tagRepository, tagCacheStore, deps.Log)
@@ -109,16 +110,17 @@ func ProvideAppDependencies(deps appDepsParams) *AppDependencies {
 	chatService := chat.NewService(chatHTTPClient, chatHistoryRepository, chatHistoryCacheStore, auditService, deps.Log)
 
 	return &AppDependencies{
-		AuthService:     authService,
-		UserService:     userService,
-		AdminService:    adminService,
-		CategoryService: categoryService,
-		TagService:      tagService,
-		RecordService:   recordService,
-		ChatService:     chatService,
-		AuditService:    auditService,
-		OutboxService:   outboxService,
-		RealtimeService: realtimeService,
-		Logger:          deps.Log,
+		AuthService:            authService,
+		UserService:            userService,
+		UserPreferencesService: userPreferencesService,
+		AdminService:           adminService,
+		CategoryService:        categoryService,
+		TagService:             tagService,
+		RecordService:          recordService,
+		ChatService:            chatService,
+		AuditService:           auditService,
+		OutboxService:          outboxService,
+		RealtimeService:        realtimeService,
+		Logger:                 deps.Log,
 	}
 }

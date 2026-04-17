@@ -5,7 +5,7 @@
 # Default dev database URL (used by migrate-dev-* commands)
 DEV_MIGRATION_DB ?= postgres://aion:aion123@localhost:5432/aion-api?sslmode=disable
 
-.PHONY: migrate-up migrate-down migrate-force migrate-new migrate-dev-up migrate-dev-down migrate-dev-status migrate-install
+.PHONY: migrate-up migrate-down migrate-force migrate-new migrate-dev-up migrate-dev-down migrate-dev-status migrate-my-up migrate-my-status migrate-install
 
 # Install golang-migrate CLI
 migrate-install:
@@ -106,3 +106,34 @@ migrate-dev-reset:
 	@$(MIGRATE_BIN) -path "$(MIGRATION_PATH)" -database "$(DEV_MIGRATION_DB)" up
 	@$(MAKE) seed-roles
 	@echo "✅ DEV database reset complete"
+
+# ============================================================
+#                 MY ENVIRONMENT MIGRATIONS
+# ============================================================
+# These commands use MY_MIGRATION_DB by default.
+# They intentionally do not provide a reset target because MY is for durable
+# personal data.
+
+migrate-my-up:
+	@if [ -z "$(MIGRATE_BIN)" ]; then \
+		echo "❌ 'migrate' CLI not found. Run: make migrate-install"; \
+		exit 1; \
+	fi
+	@echo "🚀 Running all migrations on MY database..."
+	@set +e; \
+		output="$$( $(MIGRATE_BIN) -path "$(MIGRATION_PATH)" -database "$(MY_MIGRATION_DB)" up 2>&1 )"; \
+		status="$$?"; \
+		set -e; \
+		echo "$$output" | grep -v "no change" || true; \
+		if [ "$$status" -ne 0 ] && ! echo "$$output" | grep -q "no change"; then \
+			exit "$$status"; \
+		fi
+	@echo "✅ MY migrations checked/applied"
+
+migrate-my-status:
+	@if [ -z "$(MIGRATE_BIN)" ]; then \
+		echo "❌ 'migrate' CLI not found. Run: make migrate-install"; \
+		exit 1; \
+	fi
+	@echo "📊 Migration status on MY database..."
+	@$(MIGRATE_BIN) -path "$(MIGRATION_PATH)" -database "$(MY_MIGRATION_DB)" version
