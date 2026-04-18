@@ -14,11 +14,24 @@ func TestInitOtelMetricsReturnsCleanup(t *testing.T) {
 			Env: "test",
 		},
 		Observability: config.ObservabilityConfig{
+			OtelExporterEnabled:      true,
 			OtelExporterOTLPEndpoint: "localhost:4318",
 			OtelServiceName:          "aion-test",
 			OtelServiceVersion:       "v1",
 			OtelExporterInsecure:     true,
 			OtelExporterTimeout:      "1s",
+		},
+	}
+
+	cleanup := InitOtelMetrics(cfg, noopLogger{})
+	require.NotNil(t, cleanup)
+	cleanup()
+}
+
+func TestInitOtelMetricsDisabledViaKillSwitch(t *testing.T) {
+	cfg := &config.Config{
+		Observability: config.ObservabilityConfig{
+			OtelExporterEnabled: false,
 		},
 	}
 

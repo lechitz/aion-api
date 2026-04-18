@@ -65,10 +65,29 @@ func TestInitTracerReturnsCleanup(t *testing.T) {
 			Env: "test",
 		},
 		Observability: config.ObservabilityConfig{
+			OtelExporterEnabled:      true,
 			OtelExporterOTLPEndpoint: "localhost:4318",
 			OtelServiceName:          "aion-test",
 			OtelServiceVersion:       "v1",
 			OtelExporterInsecure:     true,
+		},
+	}
+
+	cleanup := InitTracer(cfg, loggerMock)
+	require.NotNil(t, cleanup)
+	cleanup()
+}
+
+func TestInitTracerDisabledViaKillSwitch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	loggerMock := mocks.NewMockContextLogger(ctrl)
+	loggerMock.EXPECT().Infow(gomock.Any()).Times(1)
+
+	cfg := &config.Config{
+		Observability: config.ObservabilityConfig{
+			OtelExporterEnabled: false,
 		},
 	}
 

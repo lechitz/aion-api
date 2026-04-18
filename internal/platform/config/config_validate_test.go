@@ -47,6 +47,7 @@ func baseConfig() config.Config {
 			MaxRetries:      1,
 		},
 		Observability: config.ObservabilityConfig{
+			OtelExporterEnabled:      true,
 			OtelExporterOTLPEndpoint: "aion-dev-otel-collector:4318",
 			OtelExporterCompression:  "none",
 		},
@@ -159,6 +160,15 @@ func TestConfigValidate_ObservabilityAndAppErrors(t *testing.T) {
 	cfg := baseConfig()
 	cfg.Observability.OtelExporterCompression = "brotli"
 	require.EqualError(t, cfg.Validate(), "OTel Exporter compression must be either 'none' or 'gzip', got: brotli")
+
+	cfg = baseConfig()
+	cfg.Observability.OtelExporterOTLPEndpoint = ""
+	require.Error(t, cfg.Validate(), "empty endpoint should fail when exporter enabled")
+
+	cfg = baseConfig()
+	cfg.Observability.OtelExporterEnabled = false
+	cfg.Observability.OtelExporterOTLPEndpoint = ""
+	require.NoError(t, cfg.Validate(), "empty endpoint should be allowed when exporter disabled")
 
 	cfg = baseConfig()
 	cfg.Application.ContextRequest = 100 * time.Millisecond
