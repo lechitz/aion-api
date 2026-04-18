@@ -16,7 +16,13 @@ type Secret struct {
 }
 
 // ObservabilityConfig holds all observability-related configuration.
+//
+// OtelExporterEnabled is the kill switch. When false, the tracer/metric
+// providers become no-ops and no OTLP exporter is created — this lets the
+// public distribution runtime ship without a collector, and keeps the
+// configured endpoint optional in that case.
 type ObservabilityConfig struct {
+	OtelExporterEnabled      bool   `envconfig:"OTEL_EXPORTER_ENABLED"       default:"true"`
 	OtelExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"aion-dev-otel-collector:4318"`
 	OtelServiceName          string `envconfig:"OTEL_SERVICE_NAME"           default:"aion-api"`
 	OtelServiceVersion       string `envconfig:"OTEL_SERVICE_VERSION"        default:"0.0.1"`

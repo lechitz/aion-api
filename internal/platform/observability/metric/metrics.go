@@ -38,6 +38,13 @@ const (
 // InitOtelMetrics sets up the OpenTelemetry MeterProvider using the given configuration,
 // installs it as the global provider, and returns a cleanup function to gracefully shut it down.
 func InitOtelMetrics(cfg *config.Config, logger logger.ContextLogger) func() {
+	if !cfg.Observability.OtelExporterEnabled {
+		if logger != nil {
+			logger.Infow("metrics disabled via OTEL_EXPORTER_ENABLED=false")
+		}
+		return func() {}
+	}
+
 	opts := buildMetricOptions(cfg, logger)
 
 	exporter, err := otlpmetrichttp.New(context.Background(), opts...)

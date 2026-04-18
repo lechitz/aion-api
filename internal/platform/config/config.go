@@ -248,7 +248,7 @@ func (c *Config) validateDB() error {
 }
 
 func (c *Config) validateObservability() error {
-	if c.Observability.OtelExporterOTLPEndpoint == "" {
+	if c.Observability.OtelExporterEnabled && c.Observability.OtelExporterOTLPEndpoint == "" {
 		return errors.New(ErrOtelEndpointEmpty)
 	}
 	if c.Observability.OtelExporterCompression != "" {

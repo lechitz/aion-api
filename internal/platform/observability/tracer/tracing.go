@@ -43,6 +43,13 @@ const (
 // InitTracer initializes the OpenTelemetry tracer using the provided configuration,
 // installs it as the global tracer provider, and returns a cleanup function to shut it down gracefully.
 func InitTracer(cfg *config.Config, logger logger.ContextLogger) func() {
+	if !cfg.Observability.OtelExporterEnabled {
+		if logger != nil {
+			logger.Infow("tracing disabled via OTEL_EXPORTER_ENABLED=false")
+		}
+		return func() {}
+	}
+
 	exporter, err := buildOTLPExporter(cfg, logger)
 	if err != nil {
 		logger.Errorw(ErrFailedToInitializeOTLPExporter, commonkeys.Error, err)
