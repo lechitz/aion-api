@@ -22,13 +22,13 @@ type Secret struct {
 // public distribution runtime ship without a collector, and keeps the
 // configured endpoint optional in that case.
 type ObservabilityConfig struct {
-	OtelExporterEnabled      bool   `envconfig:"OTEL_EXPORTER_ENABLED"       default:"true"`
 	OtelExporterOTLPEndpoint string `envconfig:"OTEL_EXPORTER_OTLP_ENDPOINT" default:"aion-dev-otel-collector:4318"`
 	OtelServiceName          string `envconfig:"OTEL_SERVICE_NAME"           default:"aion-api"`
 	OtelServiceVersion       string `envconfig:"OTEL_SERVICE_VERSION"        default:"0.0.1"`
 	OtelExporterHeaders      string `envconfig:"OTEL_EXPORTER_HEADERS"       default:""`
 	OtelExporterTimeout      string `envconfig:"OTEL_EXPORTER_TIMEOUT"       default:"5s"`
 	OtelExporterCompression  string `envconfig:"OTEL_EXPORTER_COMPRESSION"   default:"none"`
+	OtelExporterEnabled      bool   `envconfig:"OTEL_EXPORTER_ENABLED"       default:"true"`
 	OtelExporterInsecure     bool   `envconfig:"OTEL_EXPORTER_INSECURE"      default:"true"`
 }
 
